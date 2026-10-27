@@ -1,0 +1,115 @@
+# Render Blueprint
+# Updated on 2025-05-20
+#
+# Note: If you need to fix migrations in the future:
+# 1. To merge multiple heads: Run `python fix_migrations.py`
+# 2. For a complete migration reset (development only): Run `python reset_migrations.py`
+services:
+  - type: web
+    name: SocialScannerWeb
+    runtime: python
+    repo: https://github.com/engziada/SocialScannerWeb
+    plan: starter
+    region: oregon
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn wsgi:app
+    # Skip migrations to preserve existing database
+    # preDeployCommand: python -m flask db upgrade
+    autoDeployTrigger: commit
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: DEBUG_MODE
+        value: False
+      - key: PYTHONUNBUFFERED
+        value: true
+      - key: SCHEDULER_API_ENABLED
+        value: False
+      - key: DB_ENGINE
+        value: postgresql
+      - key: DB_HOST
+        fromDatabase:
+          name: SocialScannerPG
+          property: host
+      - key: DB_NAME
+        fromDatabase:
+          name: SocialScannerPG
+          property: database
+      - key: DB_USERNAME
+        fromDatabase:
+          name: SocialScannerPG
+          property: user
+      - key: DB_PASS
+        fromDatabase:
+          name: SocialScannerPG
+          property: password
+      - key: DB_PORT
+        fromDatabase:
+          name: SocialScannerPG
+          property: port
+
+  - type: cron
+    name: SocialScannerCron
+    runtime: python
+    repo: https://github.com/engziada/SocialScannerWeb
+    plan: starter
+    region: oregon
+    schedule: "0 6 */2 * *"
+    buildCommand: pip install -r requirements.txt
+    startCommand: python cron_scan.py
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: DEBUG_MODE
+        value: False
+      - key: PYTHONUNBUFFERED
+        value: true
+      - key: DB_ENGINE
+        value: postgresql
+      - key: SMTP_SERVER
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: 587
+      - key: SMTP_USERNAME
+        value: engziada@gmail.com
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: SENDER_EMAIL
+        value: RASD@gmail.com
+      - key: NOTIFICATION_EMAILS
+        value: engziada@gmail.com,abojuree@gmail.com
+      - key: DB_HOST
+        fromDatabase:
+          name: SocialScannerPG
+          property: host
+      - key: DB_NAME
+        fromDatabase:
+          name: SocialScannerPG
+          property: database
+      - key: DB_USERNAME
+        fromDatabase:
+          name: SocialScannerPG
+          property: user
+      - key: DB_PASS
+        fromDatabase:
+          name: SocialScannerPG
+          property: password
+      - key: DB_PORT
+        fromDatabase:
+          name: SocialScannerPG
+          property: port
+
+databases:
+- name: SocialScannerPG
+  databaseName: socialscannerdb
+  user: admin
+  plan: basic-256mb
+  region: oregon
+  ipAllowList:
+  - source: 0.0.0.0/0
+    description: everywhere
+  postgresMajorVersion: "16"
+  diskSizeGB: 1
+
+version: "1"
+

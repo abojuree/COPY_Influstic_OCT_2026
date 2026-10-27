@@ -1,0 +1,475 @@
+diff --git a/apps/authentication/routes.py b/apps/authentication/routes.py
+index 5114e8c..4507931 100644
+--- a/apps/authentication/routes.py
++++ b/apps/authentication/routes.py
+@@ -211,11 +211,15 @@ def user_create():
+     roles_data = {role.id: role.permissions for role in roles}
+     
+     if request.method == 'POST':
+-        username = request.form.get('username')
+-        email = request.form.get('email')
+-        phone = request.form.get('phone')
+-        role_id_str = request.form.get('role_id')
+-        password = request.form.get('password')
++        username = (request.form.get('username') or '').strip()
++        email = (request.form.get('email') or '').strip()
++        phone = (request.form.get('phone') or '').strip()
++        role_id_str = (request.form.get('role_id') or '').strip()
++        password = (request.form.get('password') or '').strip()
++
++        if not username or not email or not password or not role_id_str:
++            flash('اسم الموظف والبريد الإلكتروني وكلمة المرور والدور الوظيفي مطلوبة ولا يمكن تركها فارغة.', 'danger')
++            return render_template('accounts/create_employee.html', roles=roles, roles_data=json.dumps(roles_data))
+         
+         # Check if email exists
+         if Users.query.filter_by(email=email).first():
+@@ -279,6 +283,7 @@ def user_edit(user_id):
+     user = Users.query.get_or_404(user_id)
+     roles = Role.query.all()
+     if request.method == 'POST':
++        default_permissions = {}
+         user.username = request.form.get('username')
+         user.email = request.form.get('email')
+         user.phone = request.form.get('phone')
+@@ -591,7 +596,7 @@ def backup_database():
+             backup_path = result
+             filename = os.path.basename(backup_path)
+ 
+-            # Check which method was used
++            # Keep the original backup metadata for status endpoints and diagnostics.
+             method_file = f"{backup_path}.method"
+             backup_method = "unknown"
+             if os.path.exists(method_file):
+@@ -602,32 +607,20 @@ def backup_database():
+                     ic(f"Error reading method file: {str(e)}")
+                     backup_method = "unknown"
+ 
+-            # Translate method name to Arabic
+-            method_ar_dict = {
+-                'pg_dump': 'PostgreSQL pg_dump (أسرع)',
+-                'sqlalchemy': 'SQLAlchemy (أبطأ ولكن أكثر توافقًا)',
+-                'unknown': 'غير معروف'
+-            }
+-            method_ar = method_ar_dict.get(backup_method, backup_method)
+-
+-            ic(f"Backup successful using {backup_method} method, file saved at: {backup_path}")
+-
+-            # Store the method in session for later retrieval
+             session['last_backup_method'] = backup_method
+             session['last_backup_time'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+             session['last_backup_size'] = os.path.getsize(backup_path)
+             session['last_backup_filename'] = filename
+ 
+-            # Create a more detailed success message
+-            success_msg = (
+-                f'تم إنشاء النسخة الاحتياطية بنجاح. '
+-                f'الطريقة: {method_ar}, '
+-                f'الحجم: {os.path.getsize(backup_path) / (1024 * 1024):.2f} MB, '
+-                f'الوقت: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}. '
+-                f'<a href="{url_for("authentication_blueprint.download_backup", filename=filename)}">اضغط هنا للتنزيل</a>.'
++            ic(f"Backup successful, file saved at: {backup_path}")
++
++            # Send the generated backup directly to the browser as a local download.
++            return send_file(
++                backup_path,
++                as_attachment=True,
++                download_name=filename,
++                mimetype='application/octet-stream'
+             )
+-            flash(success_msg, 'success')
+-            return redirect(url_for('authentication_blueprint.admin_dashboard'))
+         else:
+             # If failed, result is the error message
+             error_msg = f'Error creating database backup: {result}'
+@@ -816,30 +809,20 @@ def export_database_excel():
+             excel_path = result
+             filename = os.path.basename(excel_path)
+ 
+-            ic(f"Export successful, file saved at: {excel_path}")
+-
+-            # Verify the file exists
+-            if not os.path.exists(excel_path):
+-                error_msg = f'Export file not found at path: {excel_path}'
+-                ic(error_msg)
+-                flash(error_msg, 'danger')
+-                return redirect(url_for('authentication_blueprint.admin_dashboard'))
+-
+-            # Store information in session
++            # Preserve export metadata for status endpoints and diagnostics.
+             session['last_export_time'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+             session['last_export_size'] = os.path.getsize(excel_path)
+             session['last_export_filename'] = filename
+ 
+-            # Create a more detailed success message
+-            file_size_mb = os.path.getsize(excel_path) / (1024 * 1024)
+-            success_msg = (
+-                f'تم تصدير قاعدة البيانات بنجاح. '
+-                f'الحجم: {file_size_mb:.2f} MB, '
+-                f'الوقت: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}. '
+-                f'<a href="{url_for("authentication_blueprint.download_export", filename=filename)}">اضغط هنا للتنزيل</a>.'
++            ic(f"Export successful, file saved at: {excel_path}")
++
++            # Send the generated Excel file directly to the browser as a local download.
++            return send_file(
++                excel_path,
++                as_attachment=True,
++                download_name=filename,
++                mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+             )
+-            flash(success_msg, 'success')
+-            return redirect(url_for('authentication_blueprint.admin_dashboard'))
+         else:
+             # If failed, result is the error message
+             error_msg = f'Error exporting database to CSV: {result}'
+@@ -871,9 +854,14 @@ def create_role():
+         
+     if request.method == 'POST':
+         # 1. Extract Role Info
+-        role_name = request.form.get('role_name')
+-        role_desc = request.form.get('role_description')
++        role_name = (request.form.get('role_name') or '').strip()
++        role_desc = (request.form.get('role_description') or '').strip()
+         is_active = request.form.get('is_active') == 'on'
++
++        if not role_name or not role_desc:
++            flash('اسم الدور والوصف مطلوبان ولا يمكن تركهما فارغين.', 'danger')
++            roles = Role.query.all()
++            return render_template('accounts/create_role.html', segment='roles', roles=roles)
+         
+         # 2. Build the Permissions Matrix JSON
+         permissions_matrix = {
+diff --git a/apps/templates/accounts/create_employee.html b/apps/templates/accounts/create_employee.html
+index ccbf5e6..36e0d6b 100644
+--- a/apps/templates/accounts/create_employee.html
++++ b/apps/templates/accounts/create_employee.html
+@@ -27,27 +27,32 @@
+                         <div class="row g-3">
+                             <div class="col-md-6">
+                                 <label for="username" class="form-label">اسم الموظف</label>
+-                                <input type="text" class="form-control" id="username" name="username" required>
++                                <input type="text" class="form-control" id="username" name="username" required value="{{ request.form.get('username', '') }}" oninvalid="this.setCustomValidity('هذا الحقل مطلوب')" oninput="this.setCustomValidity('')">
+                             </div>
+                             <div class="col-md-6">
+                                 <label for="email" class="form-label">البريد الإلكتروني</label>
+-                                <input type="email" class="form-control" id="email" name="email" required>
++                                <input type="email" class="form-control" id="email" name="email" required value="{{ request.form.get('email', '') }}" oninvalid="this.setCustomValidity('هذا الحقل مطلوب')" oninput="this.setCustomValidity('')">
+                             </div>
+                             <div class="col-md-6">
+                                 <label for="phone" class="form-label">رقم الهاتف</label>
+-                                <input type="text" class="form-control" id="phone" name="phone">
++                                <input type="text" class="form-control" id="phone" name="phone" value="{{ request.form.get('phone', '') }}">
+                             </div>
+                             <div class="col-md-6">
+                                 <label for="password" class="form-label">كلمة المرور</label>
+-                                <input type="password" class="form-control" id="password" name="password" required>
++                                <input type="password" class="form-control" id="password" name="password" required oninvalid="this.setCustomValidity('هذا الحقل مطلوب')" oninput="this.setCustomValidity('')">
+                             </div>
+                             <div class="col-md-12">
+                                 <label for="role_id" class="form-label">الدور الوظيفي</label>
+-                                <select class="form-select" id="role_id" name="role_id" required>
++                                <select class="form-select" id="role_id" name="role_id" required oninvalid="this.setCustomValidity('هذا الحقل مطلوب')" oninput="this.setCustomValidity('')">
+                                     <option value="" selected disabled>اختر الدور الوظيفي...</option>
++<<<<<<< Updated upstream
+                                     <option value="admin">مدير نظام (Admin)</option>
++=======
++                                    <option value="admin" {% if request.form.get('role_id') == 'admin' %}selected{% endif %}>مدير نظام (Admin)</option>
++                                    <option value="custom" {% if request.form.get('role_id') == 'custom' %}selected{% endif %}>دور خاص (Custom Role)</option>
++>>>>>>> Stashed changes
+                                     {% for role in roles %}
+-                                        <option value="{{ role.id }}">{{ role.name }}</option>
++                                        <option value="{{ role.id }}" {% if request.form.get('role_id') == role.id|string %}selected{% endif %}>{{ role.name }}</option>
+                                     {% endfor %}
+                                 </select>
+                             </div>
+@@ -125,6 +130,12 @@
+         checkboxes.forEach(cb => cb.checked = state);
+     }
+ 
++    const currentRoleId = document.getElementById('role_id').value;
++    if (currentRoleId) {
++        const changeEvent = new Event('change');
++        document.getElementById('role_id').dispatchEvent(changeEvent);
++    }
++
+     document.getElementById('role_id').addEventListener('change', function() {
+         const selectedRoleId = this.value;
+         const checkboxes = document.querySelectorAll('.perm-checkbox');
+diff --git a/apps/templates/accounts/create_role.html b/apps/templates/accounts/create_role.html
+index 3709afd..ef63f49 100644
+--- a/apps/templates/accounts/create_role.html
++++ b/apps/templates/accounts/create_role.html
+@@ -27,7 +27,7 @@
+                         <div class="row g-3">
+                             <div class="col-md-6">
+                                 <label for="role_name" class="form-label">اسم الدور</label>
+-                                <input type="text" class="form-control" id="role_name" name="role_name" required>
++                                <input type="text" class="form-control" id="role_name" name="role_name" required value="{{ request.form.get('role_name', '') }}" oninvalid="this.setCustomValidity('هذا الحقل مطلوب')" oninput="this.setCustomValidity('')">
+                             </div>
+                             <div class="col-md-6 d-flex align-items-center mt-4">
+                                 <div class="form-check form-switch">
+@@ -37,7 +37,7 @@
+                             </div>
+                             <div class="col-12">
+                                 <label for="role_description" class="form-label">الوصف</label>
+-                                <textarea class="form-control" id="role_description" name="role_description" rows="3"></textarea>
++                                <textarea class="form-control" id="role_description" name="role_description" rows="3" required oninvalid="this.setCustomValidity('هذا الحقل مطلوب')" oninput="this.setCustomValidity('')">{{ request.form.get('role_description', '') }}</textarea>
+                             </div>
+                         </div>
+                     </div>
+diff --git a/apps/templates/accounts/user_edit.html b/apps/templates/accounts/user_edit.html
+index 13d1fa4..e0f22f0 100644
+--- a/apps/templates/accounts/user_edit.html
++++ b/apps/templates/accounts/user_edit.html
+@@ -20,12 +20,18 @@
+                         <div class="card-body p-4">
+                             {% with messages = get_flashed_messages(with_categories=true) %}
+                                 {% if messages %}
+-                                    {% for category, message in messages %}
+-                                        <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm" role="alert">
+-                                            {{ message }}
+-                                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+-                                        </div>
+-                                    {% endfor %}
++                                    <div class="toast-container position-fixed top-0 start-50 translate-middle-x p-3" style="z-index: 1080;">
++                                        {% for category, message in messages %}
++                                            <div class="toast align-items-center text-bg-{{ 'success' if category == 'success' else 'danger' }} border-0 shadow-sm mb-2" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="3500">
++                                                <div class="d-flex">
++                                                    <div class="toast-body fw-semibold">
++                                                        {{ message }}
++                                                    </div>
++                                                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
++                                                </div>
++                                            </div>
++                                        {% endfor %}
++                                    </div>
+                                 {% endif %}
+                             {% endwith %}
+ 
+@@ -71,5 +77,49 @@
+         </div>
+     </section>
+ </main>
++<<<<<<< Updated upstream
++=======
++
++<script>
++    const rolesData = {{ roles_data|safe if roles_data else '{}' }};
++
++    function toggleAllPermissions(state) {
++        const checkboxes = document.querySelectorAll('.perm-checkbox');
++        checkboxes.forEach(cb => cb.checked = state);
++    }
++
++    const roleSelect = document.querySelector('select[name="role_id"]');
++    if(roleSelect) {
++        roleSelect.addEventListener('change', function() {
++            const selectedRoleId = this.value;
++            const checkboxes = document.querySelectorAll('.perm-checkbox');
++            
++            toggleAllPermissions(false);
++
++            if (selectedRoleId === 'admin') {
++                toggleAllPermissions(true);
++            } else if (rolesData[selectedRoleId]) {
++                const permissions = rolesData[selectedRoleId];
++                for (const module in permissions) {
++                    for (const perm in permissions[module]) {
++                        if (permissions[module][perm] === 'on' || permissions[module][perm] === true || permissions[module][perm] === 'True' || permissions[module][perm] === '1') {
++                            const checkboxId = `perm_${module}_${perm}`;
++                            const checkbox = document.getElementById(checkboxId);
++                            if (checkbox) {
++                                checkbox.checked = true;
++                            }
++                        }
++                    }
++                }
++            }
++        });
++    }
++
++    document.querySelectorAll('.toast').forEach(function(toastEl) {
++        new bootstrap.Toast(toastEl).show();
++    });
++</script>
++
++>>>>>>> Stashed changes
+ {% include 'includes/footer.html' %}
+ {% endblock %}
+diff --git a/apps/templates/admin/system.html b/apps/templates/admin/system.html
+index 4d352d8..7f6142a 100644
+--- a/apps/templates/admin/system.html
++++ b/apps/templates/admin/system.html
+@@ -51,7 +51,7 @@
+                 </form>
+             </div>
+             <div class="col-md-4">
+-                <form action="{{ url_for('globals_blueprint.backup_db') }}" method="GET">
++                <form action="{{ url_for('authentication_blueprint.export_database_excel') }}" method="POST">
+                     <button type="submit" class="btn btn-outline-primary w-100 mb-2">
+                         <i class="fas fa-download"></i> تصدير قاعدة البيانات (Excel)
+                     </button>
+@@ -95,14 +95,22 @@
+                     <td><span class="badge bg-success">{{ u.status }}</span></td>
+                     <td>
+                         <div class="dropdown">
+-                            <button class="btn btn-link text-muted p-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
++                            <button class="btn btn-link text-muted p-0" type="button"
++                                data-bs-toggle="dropdown"
++                                data-bs-offset="0,4"
++                                aria-expanded="false">
+                                 <i class="fas fa-ellipsis-v fs-5"></i>
+                             </button>
+-                            <ul class="dropdown-menu dropdown-menu-end shadow border-0" dir="rtl">
+-                                <li><a class="dropdown-item" href="{{ url_for('authentication_blueprint.user_edit', user_id=u.id) }}"><i class="fas fa-pencil-alt text-primary ms-2"></i> تعديل البيانات</a></li>
+-                                <li><a class="dropdown-item" href="{{ url_for('authentication_blueprint.roles') }}"><i class="fas fa-link text-info ms-2"></i> إدارة الصلاحيات</a></li>
+-                                <li><hr class="dropdown-divider"></li>
+-                                <li><a class="dropdown-item text-danger" href="#" onclick="openConfirmationModal('هل أنت متأكد من تعطيل هذا الحساب؟','{{ url_for('authentication_blueprint.delete_user', user_id=u.id) }}');"><i class="fas fa-ban text-danger ms-2"></i> تعطيل الحساب</a></li>
++                            <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 py-1" dir="rtl" style="min-width: 180px; z-index: 9999;">
++                                <li><a class="dropdown-item d-flex align-items-center gap-2 py-2" href="{{ url_for('authentication_blueprint.user_edit', user_id=u.id) }}"><i class="fas fa-pencil-alt fa-fw text-primary"></i> <span>تعديل البيانات</span></a></li>
++<<<<<<< Updated upstream
++                                <li><a class="dropdown-item d-flex align-items-center gap-2 py-2" href="{{ url_for('authentication_blueprint.roles') }}"><i class="fas fa-link fa-fw text-info"></i> <span>إدارة الصلاحيات</span></a></li>
++                                <li><a class="dropdown-item d-flex align-items-center gap-2 py-2" href="#"><i class="fas fa-history fa-fw text-secondary"></i> <span>عرض سجل النشاط</span></a></li>
++=======
++                                <li><a class="dropdown-item d-flex align-items-center gap-2 py-2" href="{{ url_for('authentication_blueprint.user_edit', user_id=u.id) }}#permissions-section"><i class="fas fa-link fa-fw text-info"></i> <span>إدارة الصلاحيات</span></a></li>
++>>>>>>> Stashed changes
++                                <li><hr class="dropdown-divider my-1"></li>
++                                <li><a class="dropdown-item d-flex align-items-center gap-2 py-2 text-danger" href="#" onclick="openConfirmationModal('هل أنت متأكد من تعطيل هذا الحساب؟','{{ url_for('authentication_blueprint.delete_user', user_id=u.id) }}');"><i class="fas fa-ban fa-fw text-danger"></i> <span>تعطيل الحساب</span></a></li>
+                             </ul>
+                         </div>
+                     </td>
+@@ -122,7 +130,37 @@
+ <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+ <script>
+ $(document).ready(function() {
+-    $('#systemTable').DataTable({
++<<<<<<< Updated upstream
++
++    function initFixedDropdowns() {
++        // Use Popper.js 'fixed' strategy so dropdowns escape table overflow clipping
++        document.querySelectorAll('#systemTable [data-bs-toggle="dropdown"]').forEach(function(el) {
++            // Dispose existing instance if any to avoid duplicates
++            var existing = bootstrap.Dropdown.getInstance(el);
++            if (existing) existing.dispose();
++=======
++    function initFixedDropdowns() {
++        document.querySelectorAll('#systemTable [data-bs-toggle="dropdown"]').forEach(function(el) {
++            var existing = bootstrap.Dropdown.getInstance(el);
++            if (existing) {
++                existing.dispose();
++            }
++>>>>>>> Stashed changes
++
++            new bootstrap.Dropdown(el, {
++                popperConfig: {
++                    strategy: 'fixed',
++<<<<<<< Updated upstream
++                    placement: 'top-start'   // opens upward, aligned to top-right in RTL
++=======
++                    placement: 'top-start'
++>>>>>>> Stashed changes
++                }
++            });
++        });
++    }
++
++    var table = $('#systemTable').DataTable({
+         "pageLength": 10,
+         "language": {
+             "search": "بحث:",
+@@ -140,6 +178,12 @@ $(document).ready(function() {
+             }
+         },
+         initComplete: function () {
++<<<<<<< Updated upstream
++            // Init dropdowns after DataTable first render
++=======
++>>>>>>> Stashed changes
++            initFixedDropdowns();
++
+             this.api().columns([3]).every(function () {
+                 var column = this;
+                 var select = $('<select class="form-select form-select-sm ms-2 d-inline-block w-auto"><option value="">تصفية الصلاحية (الكل)</option></select>')
+@@ -158,6 +202,18 @@ $(document).ready(function() {
+             });
+         }
+     });
++
++<<<<<<< Updated upstream
++    // Re-init dropdowns after every page change (DataTables re-renders rows)
++    table.on('draw', function () {
++        initFixedDropdowns();
++    });
++
++=======
++    table.on('draw', function () {
++        initFixedDropdowns();
++    });
++>>>>>>> Stashed changes
+ });
+ </script>
+ {% endblock javascripts %}
+diff --git a/apps/templates/layouts/base.html b/apps/templates/layouts/base.html
+index 73376b0..4d4fe85 100644
+--- a/apps/templates/layouts/base.html
++++ b/apps/templates/layouts/base.html
+@@ -52,6 +52,25 @@
+         <!-- Specific Page JS goes HERE  -->
+         {% block stylesheets %}{% endblock stylesheets %}
+ 
++        <style>
++            .site-flash-toast-container {
++                top: 5.75rem;
++                z-index: 1080;
++                width: min(92vw, 480px);
++            }
++
++            .site-flash-toast {
++                border-radius: 1rem;
++                backdrop-filter: blur(10px);
++                box-shadow: 0 12px 30px rgba(15, 23, 42, 0.18);
++            }
++
++            .site-flash-toast .toast-body {
++                padding-top: 0.9rem;
++                padding-bottom: 0.9rem;
++            }
++        </style>
++
+     </head>
+ 
+     <body>
+@@ -99,11 +118,34 @@
+     </div>
+ </div>
+ 
++{% with flash_messages = get_flashed_messages(with_categories=true) %}
++    {% if flash_messages %}
++        <div class="toast-container position-fixed start-50 translate-middle-x p-0 site-flash-toast-container">
++            {% for category, message in flash_messages %}
++                <div class="toast site-flash-toast align-items-center text-bg-{{ 'success' if category == 'success' else 'danger' if category in ['danger', 'error'] else 'primary' }} border-0 mb-2" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="3500">
++                    <div class="d-flex">
++                        <div class="toast-body fw-semibold">
++                            {{ message }}
++                        </div>
++                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
++                    </div>
++                </div>
++            {% endfor %}
++        </div>
++    {% endif %}
++{% endwith %}
++
+ 
+         {% block content %}{% endblock content %}
+ 
+         {% include 'includes/scripts.html' %}
+ 
++<script>
++    document.querySelectorAll('.site-flash-toast').forEach(function(toastEl) {
++        new bootstrap.Toast(toastEl).show();
++    });
++</script>
++
+         {% block javascripts %}{% endblock javascripts %}
+ 
+     </body>

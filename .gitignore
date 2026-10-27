@@ -1,0 +1,64 @@
+# byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+
+# tests and coverage
+*.pytest_cache
+.coverage
+
+# database & logs
+*.db
+*.sqlite3
+*.log
+
+# venv
+env
+venv
+.venv
+
+# other
+.DS_Store
+
+# sphinx docs
+_build
+_static
+_templates
+
+# javascript
+package-lock.json
+.vscode/symbols.json
+
+apps/static/assets/node_modules
+apps/static/assets/yarn.lock
+apps/static/assets/.temp
+apps/static/profile_pictures/*
+!apps/static/profile_pictures/donotdelete*
+
+# Excel files
+*.xlsx
+*.xls
+!collected_influencers_legacy.xlsx
+
+# Backup and export folders
+apps/static/backups/
+apps/static/exports/
+
+# Environments
+.env
+.env.dev
+.env.prod
+.env.*
+
+# IDE / Editor settings
+.vscode/
+.VSCodeCounter/
+
+# Certificates
+*.crt
+*.key
+*.pem
+
+# Debug / Temporary files
+debug_*.html
+
+*.pdf

@@ -1,0 +1,12 @@
+[project]
+name = "SocialScannerWeb"
+version = "0.1.0"
+description = "Social Scanner Web Application"
+authors = [
+    {name = "Muhammad Ziada", email = "engziada@gmail.com"}
+]
+requires-python = ">=3.11"
+
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
