@@ -1,0 +1,145 @@
+{% extends "layouts/base.html" %}
+
+{% block title %} تعديل حساب {% endblock %}
+{% block header_title %} تعديل حساب{% endblock %}
+{% block header_sub_title %} 
+    <a href="{{ url_for('profiles_blueprint.influencer_edit', influencer_id=influencer.id) }}">
+        {{ influencer.full_name }}
+    </a>
+{% endblock %}
+{% block header_profile_image %}
+<!-- <img src="{{ url_for('static', filename='profile_pictures/' + socialaccount.profile_picture) if socialaccount.profile_picture else 'https://via.placeholder.com/150' }}"/> -->
+<img src="{{ socialaccount.profile_picture if socialaccount.profile_picture else 'https://via.placeholder.com/150' }}" />
+{% endblock %}
+
+<!-- Specific Page CSS goes HERE  -->
+{% block stylesheets %}{% endblock stylesheets %}
+
+{% block content %}
+
+<main>
+
+    {% include 'includes/preloader.html' %}
+
+    <!-- Section -->
+    <section class="section section-md">
+        <div class="container">
+            <div class="row">
+                <div class="col">
+                    <form method="POST" enctype="multipart/form-data" action="{{ url_for('social_blueprint.socialaccount_edit', socialaccount_id=socialaccount.id) }}">
+                        {{ form.hidden_tag() }}
+                        {{ form.platform.label }}
+                        <div class="form-group">
+                            {{ form.platform(class_='form-select', size=1, readonly=True) }}
+                            {% for error in form.platform.errors %}
+                            <span class="error">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                        {{ form.username.label }}
+                        <div class="form-group">
+                            {{ form.username(class_='form-control',size=30) }}
+                            {% for error in form.username.errors %}
+                            <span class="error">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                        {{ form.public_profile_name.label }}
+                        <div class="form-group">
+                            {{ form.public_profile_name(class_='form-control',size=30) }}
+                            {% for error in form.public_profile_name.errors %}
+                            <span class="error">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                        {{ form.contents.label }}
+                        <div class="checkbox-list">
+                            {{ form.contents(style="display: none;") }}
+                            {% for value, label in form.contents.choices %}
+                            <div class="checkbox">
+                                <label>
+                                    <input type="checkbox" name="contents" value="{{ value }}" {% if value|string in form.contents.data|map('string')|list %}checked{% endif %}>
+                                    {{ label }}
+                                </label>
+                            </div>
+                            {% endfor %}
+                            {% if form.contents.errors %}
+                            <div class="error-message">
+                                {% for error in form.contents.errors %}
+                                <span class="error text-danger">{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        {{ form.bio_text.label }}
+                        <div class="form-group">
+                            {{ form.bio_text(class_='form-control',size=30) }}
+                            {% for error in form.bio_text.errors %}
+                            <span class="error">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                        {{ form.external_url.label }}
+                        <div class="form-group">
+                            {{ form.external_url(class_='form-control',size=30)}}
+                            {% for error in form.external_url.errors %}
+                            <span class="error">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                            {{ form.profile_picture(class_='form-control') }}
+                        <hr>
+                        <div class="btn-bar">
+                            <button type="submit" class="btn btn-primary" id="submitButton" {% if not form.is_edited %}disabled{% endif %}>{% if form.is_edited %}تم تحديث البيانات, حفظ؟{%else%}حفظ{% endif %}</button>
+                            <button type="button" class="btn btn-secondary" onclick="window.location.href='{{ url_for("social_blueprint.socialaccounts", influencer_id=influencer.id) }}'">الغاء</button>
+                            <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#modal-default" onclick="openConfirmationModal('هل أنت متأكد من الحذف ؟','{{ url_for("social_blueprint.socialaccount_delete", influencer_id=influencer.id, socialaccount_id=socialaccount.id) }}');">حذف</button>
+                        </div>
+
+                        {% with messages = get_flashed_messages(with_categories=True) %}
+                        {% if messages %}
+                        <hr>
+                        <ul class="flashes">
+                            {% for category, message in messages %}
+                            <li class="flash text-{{ category }}">{{ message }}</li>
+                            {% endfor %}
+                        </ul>
+                        {% endif %}
+                        {% endwith %}
+                        
+                    </form>
+                </div>
+                
+                {%if profile_data and not profile_data.get('error')%}
+                <div class="col-md-4">
+                    <div class="card shadow"><img src="{{ profile_data.get('profile_picture') }}" class="card-img-top rounded-top" alt="{{ profile_data.get('username') }}">
+                        <div class="card-body">
+                            <h4 style="display: flex; flex-direction: row-reverse;"><span class="fab fa-{{profile_data.get('platform_name_english').lower()}} me-2"></span>{{ profile_data.get('username') }}</h4>
+                            <h3 class="h5 card-title mt-3">{{ profile_data.get('public_profile_name') }}</h3>
+                            <p class="card-text">المنصة: {{ profile_data.get('platform') }}</p>
+                            <p class="card-text">عدد المتابعين: {{ profile_data.get('followers') }}</p>
+                            <p class="card-text">عدد الإعجابات: {{ profile_data.get('likes') }}</p>
+                            <p class="card-text">عدد المقاطع المنشورة: {{ profile_data.get('posts') }}</p>
+                            <p class="card-text">نص البايو: {{ profile_data.get('bio_text') }}</p>
+                            <p class="card-text">رابط الملف: <a href="{{ profile_data.get('external_url') }}" target="_blank">إضغط هنا</a></p>
+                            <p class="card-text">الوقت المستغرق: {{ profile_data.get('time_taken') }}</p>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+</main>
+
+{% include 'includes/footer.html' %}
+
+{% endblock content %}
+
+<!-- Specific Page JS goes HERE  -->
+{% block javascripts %}
+    <script>
+        // Get the form element
+        const form = document.querySelector('form');
+
+        // Add event listener to form inputs
+        form.addEventListener('input', function () {
+            // Enable the submit button when the form has changes
+            document.getElementById('submitButton').disabled = false;
+        });
+    </script>
+{% endblock javascripts %}

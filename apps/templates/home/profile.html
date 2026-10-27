@@ -1,0 +1,144 @@
+{% extends "layouts/base.html" %}
+
+{% block title %} إعدادات الحملة {% endblock %}
+{% block header_title %} الإعدادات {% endblock %}
+{% block header_sub_title %}DNA الحملة الإعلانية{% endblock %}
+
+{% block stylesheets %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<style>
+    .select2-container--default .select2-selection--multiple {
+        border: 1px solid #ced4da;
+        border-radius: 0.375rem;
+        min-height: 45px;
+        padding: 5px;
+    }
+    .select2-container--default .select2-selection--multiple .select2-selection__choice {
+        background-color: #e9ecef;
+        border: 1px solid #dee2e6;
+        color: #212529;
+        padding: 2px 10px;
+        border-radius: 4px;
+        margin-top: 5px;
+    }
+    .select2-container[dir="rtl"] .select2-selection--multiple .select2-selection__choice__remove {
+        margin-left: 5px;
+        margin-right: -5px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4" dir="rtl">
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="row justify-content-center">
+        <!-- Administrative Summary -->
+        <div class="col-lg-8 mb-4">
+            <div class="card shadow-sm border-0" style="border-radius: 15px;">
+                <div class="card-header bg-white border-0 py-4 text-center">
+                    <h4 class="mb-0" style="font-family: 'Tajawal', sans-serif; font-weight: 700; color: #2c3e50;">
+                        إدارة النظام والملف الشخصي
+                    </h4>
+                    <p class="text-muted mt-2 mb-0">ملخص حساب الوكالة واستخدام النظام</p>
+                </div>
+                
+                <div class="card-body p-4 p-md-5 pt-0">
+                    <div class="row text-center mb-4">
+                        <div class="col-md-6 mb-3">
+                            <h6 class="text-muted text-uppercase small">اسم الوكالة</h6>
+                            <h4 class="fw-bold text-primary">{{ current_user.agency.name if current_user.agency else 'غير محدد' }}</h4>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <h6 class="text-muted text-uppercase small">خطة الاشتراك</h6>
+                            <h4 class="fw-bold text-success">{{ subscription.plan.name if subscription and subscription.plan else 'مرحلة تجريبية (Free)' }}</h4>
+                        </div>
+                    </div>
+                    
+                    <hr class="my-4">
+                    
+                    <div class="row text-center mb-4">
+                        <div class="col-md-6 mb-3">
+                            <h6 class="text-muted text-uppercase small">المستخدم الحالي</h6>
+                            <h4 class="fw-bold text-dark">{{ current_user.username }}</h4>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <h6 class="text-muted text-uppercase small">البريد الإلكتروني</h6>
+                            <h4 class="fw-bold text-dark">{{ current_user.email }}</h4>
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+                    
+                    <div class="row text-center">
+                        <div class="col-12">
+                            <h6 class="text-muted text-uppercase small mb-3">استهلاك الحملات الإعلانية</h6>
+                            <div class="d-flex justify-content-center align-items-center">
+                                <h3 class="fw-bold text-dark mb-0 me-2">الحملات النشطة:</h3>
+                                <h3 class="fw-bold text-info mb-0">{{ current_user.agency.campaigns.count() if current_user.agency else 0 }} / {{ subscription.plan.campaign_limit if subscription and subscription.plan else 1 }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Subscription Plans -->
+        <div class="col-lg-12 mb-4">
+            <h4 class="text-center mb-4" style="font-family: 'Tajawal', sans-serif; font-weight: 700; color: #2c3e50;">باقات الاشتراك</h4>
+            <div class="row justify-content-center">
+                {% for plan in plans %}
+                <div class="col-md-4 mb-4">
+                    <div class="card shadow-sm h-100 text-center border-0" style="border-radius: 15px; transition: transform 0.3s; {% if subscription and subscription.plan_id == plan.id %}border: 2px solid #28a745 !important;{% endif %}">
+                        <div class="card-body p-4">
+                            <h3 class="fw-bold mb-3">{{ plan.name }}</h3>
+                            <h2 class="text-primary mb-4">${{ plan.price }}<span class="fs-6 text-muted">/شهر</span></h2>
+                            <ul class="list-unstyled mb-4">
+                                <li class="mb-2"><i class="fas fa-check text-success ms-2"></i> الحد الأقصى للمؤثرين: {{ plan.tracking_limit }}</li>
+                                <li class="mb-2"><i class="fas fa-check text-success ms-2"></i> الحد الأقصى للحملات: {{ plan.campaign_limit }}</li>
+                                <li class="mb-2"><i class="fas fa-check text-success ms-2"></i> تحليلات متقدمة</li>
+                                <li class="mb-2"><i class="fas fa-check text-success ms-2"></i> دعم فني</li>
+                            </ul>
+                            
+                            {% if subscription and subscription.plan_id == plan.id %}
+                                <span class="badge bg-success p-2 w-100 fs-6 rounded-pill">الباقة الحالية</span>
+                            {% else %}
+                                <form action="{{ url_for('home_blueprint.subscribe', plan_id=plan.id) }}" method="POST">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}"/>
+                                    <button type="submit" class="btn btn-outline-primary w-100 rounded-pill">اشترك الآن</button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+    $(document).ready(function() {
+        $('.select2-multiple').select2({
+            dir: "rtl",
+            width: '100%'
+        });
+    });
+</script>
+{% endblock %}

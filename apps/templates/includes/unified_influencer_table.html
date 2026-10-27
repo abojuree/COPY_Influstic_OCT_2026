@@ -1,0 +1,237 @@
+{% set platform_caps = {
+    'tiktok': {'views': true, 'likes': true, 'comments': true, 'shares': true, 'saves': true},
+    'instagram': {'views': true, 'likes': true, 'comments': true, 'shares': false, 'saves': false},
+    'snapchat': {'views': true, 'likes': false, 'comments': false, 'shares': false, 'saves': false}
+} %}
+<!-- Filter Bar -->
+<div class="row mb-3 gx-2 align-items-center bg-white p-3 rounded shadow-sm border">
+    <div class="col-md-3">
+        <label class="form-label small text-muted mb-1">المنصة</label>
+        <select id="dt-platform-filter" class="form-select form-select-sm">
+            <option value="">الكل (All)</option>
+            <option value="Instagram">إنستغرام</option>
+            <option value="TikTok">تيك توك</option>
+            <option value="Snapchat">سناب شات</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label small text-muted mb-1">التصنيف</label>
+        <select id="dt-category-filter" class="form-select form-select-sm">
+            <option value="">الكل (All)</option>
+            {% set categories = [] %}
+            {% for row in accounts_with_metrics %}
+                {% if row.influencer.category and row.influencer.category not in categories %}
+                    {% set _ = categories.append(row.influencer.category) %}
+                {% endif %}
+            {% endfor %}
+            {% for cat in categories %}
+                <option value="{{ cat }}">{{ cat }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label small text-muted mb-1">المتابعين (Followers)</label>
+        <div class="input-group input-group-sm">
+            <input type="number" id="dt-min-followers" class="form-control" placeholder="Min">
+            <input type="number" id="dt-max-followers" class="form-control" placeholder="Max">
+        </div>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label small text-muted mb-1">متوسط المشاهدات (Views)</label>
+        <div class="input-group input-group-sm">
+            <input type="number" id="dt-min-views" class="form-control" placeholder="Min">
+            <input type="number" id="dt-max-views" class="form-control" placeholder="Max">
+        </div>
+    </div>
+    <div class="col-12 mt-3 text-start">
+        <button id="dt-apply-filters" class="btn btn-primary btn-sm px-4">تطبيق الفلاتر <i class="fas fa-filter ms-1"></i></button>
+        <button id="dt-reset-filters" class="btn btn-light btn-sm px-4 ms-2">إعادة ضبط</button>
+    </div>
+</div>
+
+<!-- Unified Table -->
+<div class="table-responsive">
+    <table id="unifiedInfluencerTable" class="table table-hover align-middle w-100">
+        <thead class="table-light">
+            <tr>
+                <th>المؤثر (Influencer)</th>
+                <th>المنصة (Platform)</th>
+                <th>التصنيف والموقع (Niche & Location)</th>
+                <th>المتابعين (Followers)</th>
+                <th>متوسط المشاهدات (Avg Views)</th>
+                <th>متوسط الإعجابات (Avg Likes)</th>
+                <th>متوسط التعليقات (Avg Comments)</th>
+                <th>مشاركات وحفظ (Shares & Saves)</th>
+                <th>معلومات التواصل (Contact)</th>
+                <th>الإجراء (Action)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in accounts_with_metrics %}
+            {% set acc = row.account %}
+            {% set inf = row.influencer %}
+            {% set caps = platform_caps.get(row.platform.name_english|lower, {'views': true, 'likes': true, 'comments': true, 'shares': true, 'saves': true}) %}
+            {% set profile_url = url_for('authentication_blueprint.admin_influencer_detail', id=inf.id) if table_view == 'admin' else url_for('home_blueprint.influencer_detail', id=inf.id) %}
+            <tr>
+                <!-- Influencer -->
+                <td>
+                    <div class="d-flex align-items-center">
+                        {% set pic = acc.profile_picture or inf.profile_picture %}
+                        <a href="{{ profile_url }}">
+                            <img src="{{ pic or '/static/assets/img/default-avatar.png' }}" class="avatar-sm rounded-circle ms-3 border object-fit-cover" style="width: 40px; height: 40px;" alt="Avatar">
+                        </a>
+                        <div>
+                            <a href="{{ profile_url }}" class="fw-bold text-dark text-decoration-none hover-primary">{{ inf.full_name }}</a>
+                            <div class="small text-muted" dir="ltr">@{{ acc.username }}</div>
+                        </div>
+                    </div>
+                </td>
+                
+                <!-- Platform -->
+                <td>
+                    <span class="badge bg-light text-dark border dt-platform-cell">
+                        <i class="fab fa-{{ row.platform.name_english|lower }} text-{{ row.platform.name_english|lower }}"></i> 
+                        {{ row.platform.name }}
+                    </span>
+                    <span class="d-none dt-platform-name">{{ row.platform.name_english }}</span>
+                </td>
+                
+                <!-- Niche & Location -->
+                <td>
+                    <div class="dt-category-cell fw-semibold text-dark">{{ inf.category or 'غير محدد' }}</div>
+                    <div class="small text-muted">
+                        <i class="fas fa-map-marker-alt ms-1 text-danger"></i> 
+                        {{ inf.country or 'غير محدد' }}{% if inf.city %} - {{ inf.city }}{% endif %}
+                    </div>
+                </td>
+                
+                <!-- Followers -->
+                <td data-order="{{ acc.followers or 0 }}">
+                    <span class="fw-bold text-dark dt-followers-cell">{{ "{:,}".format(acc.followers) if acc.followers else '0' }}</span>
+                </td>
+                
+                <!-- Avg Views -->
+                {% if not caps.views %}
+                <td data-order="-1">
+                    <span class="text-muted small dt-views-cell" data-bs-toggle="tooltip" data-bs-placement="top" title="غير مدعوم من المنصة">
+                        <i class="fa fa-info-circle"></i> غير مدعوم
+                    </span>
+                </td>
+                {% else %}
+                <td data-order="{{ row.avg_views if row.avg_views is not none else 0 }}">
+                    {% if row.avg_views is not none %}
+                        <span class="fw-bold text-primary dt-views-cell">{{ "{:,}".format(row.avg_views) }}</span>
+                    {% else %}
+                        <span class="text-muted dt-views-cell" data-bs-toggle="tooltip" data-bs-placement="top" title="لم يتم فحص المنشورات بعد">—</span>
+                    {% endif %}
+                </td>
+                {% endif %}
+                
+                <!-- Avg Likes -->
+                {% if not caps.likes %}
+                <td data-order="-1">
+                    <span class="text-muted small" data-bs-toggle="tooltip" data-bs-placement="top" title="غير مدعوم من المنصة">
+                        <i class="fa fa-info-circle"></i> غير مدعوم
+                    </span>
+                </td>
+                {% else %}
+                <td data-order="{{ row.avg_likes if row.avg_likes is not none else 0 }}">
+                    {% if row.avg_likes is not none %}
+                        <span class="fw-bold text-danger">{{ "{:,}".format(row.avg_likes) }}</span>
+                    {% else %}
+                        <span class="text-muted" data-bs-toggle="tooltip" data-bs-placement="top" title="لم يتم فحص المنشورات بعد">—</span>
+                    {% endif %}
+                </td>
+                {% endif %}
+                
+                <!-- Avg Comments -->
+                {% if not caps.comments %}
+                <td data-order="-1">
+                    <span class="text-muted small" data-bs-toggle="tooltip" data-bs-placement="top" title="غير مدعوم من المنصة">
+                        <i class="fa fa-info-circle"></i> غير مدعوم
+                    </span>
+                </td>
+                {% else %}
+                <td data-order="{{ row.avg_comments if row.avg_comments is not none else 0 }}">
+                    {% if row.avg_comments is not none %}
+                        <span class="fw-bold text-info">{{ "{:,}".format(row.avg_comments) }}</span>
+                    {% else %}
+                        <span class="text-muted" data-bs-toggle="tooltip" data-bs-placement="top" title="لم يتم فحص المنشورات بعد">—</span>
+                    {% endif %}
+                </td>
+                {% endif %}
+                
+                <!-- Shares & Saves -->
+                {% if not caps.shares and not caps.saves %}
+                <td data-order="-1">
+                    <span class="text-muted small" data-bs-toggle="tooltip" data-bs-placement="top" title="غير مدعوم من المنصة">
+                        <i class="fa fa-info-circle"></i> غير مدعوم
+                    </span>
+                </td>
+                {% else %}
+                <td data-order="{{ (row.avg_shares or 0) + (row.avg_saves or 0) if (row.avg_shares is not none or row.avg_saves is not none) else 0 }}">
+                    {% if row.avg_shares is not none or row.avg_saves is not none %}
+                        <div class="small">
+                            {% if caps.shares %}
+                            <span class="text-dark"><i class="fas fa-share text-success ms-1"></i> {{ "{:,}".format(row.avg_shares) if row.avg_shares is not none else 0 }}</span><br>
+                            {% endif %}
+                            {% if caps.saves %}
+                            <span class="text-dark"><i class="fas fa-bookmark text-warning ms-1"></i> {{ "{:,}".format(row.avg_saves) if row.avg_saves is not none else 0 }}</span>
+                            {% endif %}
+                        </div>
+                    {% else %}
+                        <span class="text-muted" data-bs-toggle="tooltip" data-bs-placement="top" title="لم يتم فحص المنشورات بعد">—</span>
+                    {% endif %}
+                </td>
+                {% endif %}
+                
+                <!-- Contact -->
+                <td>
+                    <div class="d-flex gap-2 justify-content-center">
+                        {% if inf.email %}
+                            <a href="mailto:{{ inf.email }}" class="text-secondary" data-bs-toggle="tooltip" title="البريد الإلكتروني متاح"><i class="fas fa-envelope"></i></a>
+                        {% else %}
+                            <i class="fas fa-envelope text-light" data-bs-toggle="tooltip" title="غير متاح"></i>
+                        {% endif %}
+                        
+                        {% if inf.phone %}
+                            <a href="tel:{{ inf.phone }}" class="text-secondary" data-bs-toggle="tooltip" title="رقم الهاتف متاح"><i class="fas fa-phone"></i></a>
+                        {% else %}
+                            <i class="fas fa-phone text-light" data-bs-toggle="tooltip" title="غير متاح"></i>
+                        {% endif %}
+                    </div>
+                </td>
+                
+                <!-- Action -->
+                <td>
+                    {% if table_view == 'admin' %}
+                        <a href="{{ url_for('authentication_blueprint.admin_influencer_detail', id=inf.id) }}" class="btn btn-sm btn-outline-primary rounded-pill px-3 mb-1">عرض</a>
+                        <form action="{{ url_for('authentication_blueprint.admin_delete_influencer', id=inf.id) }}" method="POST" class="d-inline" onsubmit="return confirm('هل أنت متأكد من حذف هذا المؤثر؟');">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}"/>
+                            <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3 mb-1"><i class="fas fa-trash-alt"></i></button>
+                        </form>
+                    {% elif table_view == 'discover' %}
+                        <a href="{{ url_for('home_blueprint.influencer_detail', id=inf.id) }}" class="btn btn-sm btn-outline-info rounded-pill px-2 mb-1" title="عرض الملف">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-2 mb-1" data-bs-toggle="modal" data-bs-target="#shortlistModal{{ inf.id }}" title="إضافة لحملة">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                        <form action="{{ url_for('home_blueprint.favourite_add') }}" method="POST" class="d-inline">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}"/>
+                            <input type="hidden" name="influencer_id" value="{{ inf.id }}">
+                            <button type="submit" class="btn btn-sm btn-outline-warning rounded-pill px-2 mb-1" title="إضافة للمفضلة">
+                                <i class="fas fa-star"></i>
+                            </button>
+                        </form>
+                    {% else %}
+                        <a href="{{ url_for('home_blueprint.influencer_detail', id=inf.id) }}" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

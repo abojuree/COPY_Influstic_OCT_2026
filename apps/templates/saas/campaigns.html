@@ -1,0 +1,82 @@
+{% extends "layouts/base.html" %}
+
+{% block title %} Campaigns Dashboard {% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4" dir="rtl">
+  <div class="row mb-4 align-items-center">
+    <div class="col-8">
+      <h2 class="mb-0" style="font-family: 'Tajawal', sans-serif; font-weight: 700; color: #2c3e50;">الحملات الإعلانية</h2>
+    </div>
+    <div class="col-4 text-start">
+      <a href="{{ url_for('saas_blueprint.new_campaign') }}" class="btn btn-primary shadow-sm">
+        <i class="fas fa-plus me-1"></i> إنشاء حملة جديدة
+      </a>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col">
+      <div class="card shadow-sm border-0" style="border-radius: 15px;">
+        <div class="card-header bg-white border-0 py-4">
+          <h4 class="mb-0">قائمة الحملات</h4>
+        </div>
+        <div class="table-responsive">
+          <table class="table align-items-center table-flush">
+            <thead class="thead-light">
+              <tr>
+                <th scope="col">اسم الحملة</th>
+                <th scope="col">الحالة</th>
+                <th scope="col">الهدف</th>
+                <th scope="col">المؤثرين المرشحين</th>
+                <th scope="col">الإجراء</th>
+              </tr>
+            </thead>
+            <tbody class="list">
+              {% for campaign in campaigns %}
+              <tr>
+                <th scope="row">
+                  <div class="media align-items-center">
+                    <div class="media-body">
+                      <span class="name mb-0 text-sm">{{ campaign.name }}</span>
+                    </div>
+                  </div>
+                </th>
+                <td>
+                  <span class="badge badge-dot mr-4">
+                    {% if campaign.status == 'Active' %}
+                      <i class="bg-success"></i>
+                    {% elif campaign.status == 'Draft' %}
+                      <i class="bg-warning"></i>
+                    {% else %}
+                      <i class="bg-info"></i>
+                    {% endif %}
+                    <span class="status">{{ campaign.status }}</span>
+                  </span>
+                </td>
+                <td>
+                  {{ campaign.objective | replace('_', ' ') | title }}
+                </td>
+                <td>
+                  {{ campaign.shortlists.first().influencers|length if campaign.shortlists.first() else 0 }} مؤثر
+                </td>
+                <td class="text-right">
+                  <a href="{{ url_for('saas_blueprint.campaign_workspace', campaign_id=campaign.id) }}" class="btn btn-sm btn-primary"><i class="fas fa-folder-open me-1"></i> فتح</a>
+                  <a href="{{ url_for('saas_blueprint.edit_campaign', campaign_id=campaign.id) }}" class="btn btn-sm btn-outline-secondary"><i class="fas fa-edit me-1"></i> تعديل</a>
+                </td>
+              </tr>
+              {% else %}
+              <tr>
+                <td colspan="5" class="text-center py-4">
+                  لا توجد حملات حالياً. قم بإنشاء أول حملة للبدء!
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

@@ -1,0 +1,156 @@
+{% extends "layouts/base.html" %}
+
+{% block title %} الرئيسية - لوحة الإدارة {% endblock %}
+{% block header_title %} الرئيسية - لوحة الإدارة {% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-end mb-3">
+        <form method="GET" class="d-inline-block">
+            <div class="input-group input-group-sm">
+                <span class="input-group-text bg-white fw-bold"><i class="fas fa-calendar-alt me-1"></i> المدة
+                    الزمنية</span>
+                <select name="range" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="today" {% if current_range=='today' %}selected{% endif %}>اليوم</option>
+                    <option value="7days" {% if current_range=='7days' %}selected{% endif %}>آخر 7 أيام</option>
+                    <option value="30days" {% if current_range=='30days' %}selected{% endif %}>آخر 30 يوم</option>
+                    <option value="all" {% if current_range=='all' %}selected{% endif %}>الكل</option>
+                </select>
+            </div>
+        </form>
+    </div>
+    <div class="row">
+        <div class="col-md-3">
+            <div class="card bg-white shadow-sm mb-4">
+                <div class="card-body">
+                    <h6 class="text-muted">عمليات الفحص </h6>
+                    <h3>{{ total_scans_today }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white shadow-sm mb-4">
+                <div class="card-body">
+                    <h6>ناجحة</h6>
+                    <h3>{{ successful_scans_today }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white shadow-sm mb-4">
+                <div class="card-body">
+                    <h6>فاشلة</h6>
+                    <h3>{{ failed_scans_today }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white shadow-sm mb-4">
+                <div class="card-body">
+                    <h6>معدل النجاح</h6>
+                    <h3>{{ success_rate }}%</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header border-0">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <h2 class="fs-5 fw-bold mb-0">سجل الفحص </h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <canvas id="scanChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header border-0">
+            <h2 class="fs-5 fw-bold mb-0">أحدث الأخطاء</h2>
+        </div>
+        <div class="table-responsive">
+            <table id="homeTable" class="table align-items-center table-flush">
+                <thead class="thead-light">
+                    <tr>
+                        <th scope="col">الوقت</th>
+                        <th scope="col">الحساب</th>
+                        <th scope="col">رسالة الخطأ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for fail in recent_failures %}
+                    <tr>
+                        <td>{{ fail.timestamp }}</td>
+                        <td>{{ fail.handle }}</td>
+                        <td class="text-danger">{{ fail.error_message }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    $(document).ready(function () {
+        $('#homeTable').DataTable({
+            "pageLength": 10,
+            "language": {
+                "search": "بحث:",
+                "lengthMenu": "عرض _MENU_ سجلات",
+                "info": "عرض _START_ إلى _END_ من _TOTAL_ سجلات",
+                "emptyTable": "لا توجد بيانات متاحة في الجدول",
+                "infoEmpty": "عرض 0 إلى 0 من 0 سجلات",
+                "infoFiltered": "(تصفية من _MAX_ إجمالي السجلات)",
+                "zeroRecords": "لم يتم العثور على سجلات مطابقة",
+                "paginate": {
+                    "first": "الأول",
+                    "last": "الأخير",
+                    "next": "التالي",
+                    "previous": "السابق"
+                }
+            }
+        });
+
+        const ctx = document.getElementById('scanChart').getContext('2d');
+        const chartLabels = JSON.parse('{{ chart_labels | safe }}');
+        const chartSuccess = JSON.parse('{{ chart_success | safe }}');
+        const chartFailed = JSON.parse('{{ chart_failed | safe }}');
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: chartLabels,
+                datasets: [
+                    {
+                        label: 'ناجحة',
+                        data: chartSuccess,
+                        borderColor: '#10b981',
+                        tension: 0.1
+                    },
+                    {
+                        label: 'فاشلة',
+                        data: chartFailed,
+                        borderColor: '#ef4444',
+                        tension: 0.1
+                    }
+                ]
+            }
+        });
+    });
+</script>
+{% endblock javascripts %}

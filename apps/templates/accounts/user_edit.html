@@ -1,0 +1,123 @@
+{% extends "layouts/base.html" %}
+
+{% block title %} {{ 'تعديل بيانات الموظف' if edit_mode else 'إضافة موظف جديد' }} {% endblock %}
+{% block header_title %} إدارة الموظفين {% endblock %}
+{% block header_profile_image %}<i class="fas fa-user-edit fa-3x"></i>{% endblock %}
+
+{% block content %}
+<main>
+    {% include 'includes/preloader.html' %}
+    <section class="section section-md pb-5">
+        <div class="container-fluid px-4" dir="rtl">
+            <div class="row justify-content-center">
+                <div class="col-12 col-lg-8">
+                    <div class="card border-0 shadow-sm mt-4">
+                        <div class="card-header bg-white border-bottom py-3">
+                            <h5 class="mb-0 fw-bold text-primary">
+                                <i class="fas fa-user-plus me-2"></i> {{ 'تعديل بيانات الموظف' if edit_mode else 'إضافة موظف جديد' }}
+                            </h5>
+                        </div>
+                        <div class="card-body p-4">
+                            {% with messages = get_flashed_messages(with_categories=true) %}
+                                {% if messages %}
+                                    <div class="toast-container position-fixed top-0 start-50 translate-middle-x p-3" style="z-index: 1080;">
+                                        {% for category, message in messages %}
+                                            <div class="toast align-items-center text-bg-{{ 'success' if category == 'success' else 'danger' }} border-0 shadow-sm mb-2" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="3500">
+                                                <div class="d-flex">
+                                                    <div class="toast-body fw-semibold">
+                                                        {{ message }}
+                                                    </div>
+                                                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            {% endwith %}
+
+                            <form action="{{ url_for('authentication_blueprint.user_edit', user_id=user.id) if edit_mode else url_for('authentication_blueprint.user_create') }}" method="POST">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold">اسم الموظف</label>
+                                        <input type="text" name="username" class="form-control" value="{{ user.username or '' }}" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold">البريد الإلكتروني</label>
+                                        <input type="email" name="email" class="form-control" value="{{ user.email or '' }}" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold">رقم الهاتف</label>
+                                        <input type="text" name="phone" class="form-control" dir="ltr" value="{{ user.phone or '' }}">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold">الدور الوظيفي</label>
+                                        <select name="role_id" class="form-select">
+                                            <option value="">-- بدون دور (مستخدم عادي) --</option>
+                                            <option value="admin" {% if edit_mode and user.role == 'admin' %}selected{% endif %}>مدير النظام</option>
+                                            <option value="custom" {% if edit_mode and user.role == 'custom' %}selected{% endif %}>دور خاص (Custom Role)</option>
+                                            {% for role in roles %}
+                                                <option value="{{ role.id }}" {% if edit_mode and user.role_id == role.id %}selected{% endif %}>{{ role.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold">كلمة المرور {% if edit_mode %}<small class="text-muted">(اتركه فارغاً لعدم التغيير)</small>{% endif %}</label>
+                                        <input type="password" name="password" class="form-control" {% if not edit_mode %}required{% endif %}>
+                                    </div>
+                                </div>
+                                <hr class="my-4">
+
+                                {% set perms = (user.custom_permissions if user.custom_permissions is not none else (user.role_model.permissions if user.role_model else {})) if edit_mode else {} %}
+                                {% include 'accounts/includes/permission_matrix.html' %}
+
+                                <div class="d-flex justify-content-between mt-4">
+                                    <button type="submit" class="btn btn-primary px-4 rounded-pill shadow-sm"><i class="fas fa-save ms-2"></i> حفظ</button>
+                                    <a href="{{ url_for('authentication_blueprint.users') }}" class="btn btn-outline-secondary px-4 rounded-pill shadow-sm">إلغاء</a>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+
+<script>
+    const rolesData = {{ roles_data|safe if roles_data else '{}' }};
+
+    function toggleAllPermissions(state) {
+        const checkboxes = document.querySelectorAll('.perm-checkbox');
+        checkboxes.forEach(cb => cb.checked = state);
+    }
+
+    const roleSelect = document.querySelector('select[name="role_id"]');
+    if(roleSelect) {
+        roleSelect.addEventListener('change', function() {
+            const selectedRoleId = this.value;
+            const checkboxes = document.querySelectorAll('.perm-checkbox');
+            
+            toggleAllPermissions(false);
+
+            if (selectedRoleId === 'admin') {
+                toggleAllPermissions(true);
+            } else if (rolesData[selectedRoleId]) {
+                const permissions = rolesData[selectedRoleId];
+                for (const module in permissions) {
+                    for (const perm in permissions[module]) {
+                        if (permissions[module][perm] === 'on' || permissions[module][perm] === true || permissions[module][perm] === 'True' || permissions[module][perm] === '1') {
+                            const checkboxId = `perm_${module}_${perm}`;
+                            const checkbox = document.getElementById(checkboxId);
+                            if (checkbox) {
+                                checkbox.checked = true;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+</script>
+
+{% include 'includes/footer.html' %}
+{% endblock %}

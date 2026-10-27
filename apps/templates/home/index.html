@@ -1,0 +1,216 @@
+{% extends "layouts/base.html" %}
+
+{% block title %} لوحة تحكم الوكالة {% endblock %}
+{% block header_title %} لوحة التحكم {% endblock %}
+{% block header_sub_title %}ملخص الوكالة{% endblock %}
+
+{% block stylesheets %}
+<style>
+    .kpi-card {
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        border-right: 4px solid #3498db;
+        transition: transform 0.3s ease;
+    }
+    .kpi-card:hover {
+        transform: translateY(-5px);
+    }
+    .kpi-value {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #2c3e50;
+    }
+    .kpi-label {
+        font-size: 1.1rem;
+        color: #7f8c8d;
+    }
+    
+    .recommendation-card {
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        transition: all 0.3s ease;
+        background: #fff;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+    .recommendation-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    }
+    .recommendation-header {
+        position: relative;
+        height: 150px;
+        background: linear-gradient(135deg, #f6f8fd 0%, #f1f5f9 100%);
+    }
+    .rec-avatar {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        border: 4px solid #fff;
+        position: absolute;
+        bottom: -50px;
+        left: 50%;
+        transform: translateX(-50%);
+        object-fit: cover;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    .recommendation-body {
+        padding: 60px 20px 20px;
+        text-align: center;
+        flex-grow: 1;
+    }
+    .rec-name {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #2d3748;
+        margin-bottom: 5px;
+    }
+    .rec-platforms {
+        margin-bottom: 15px;
+    }
+    .rec-platforms .badge {
+        font-size: 0.8rem;
+        padding: 5px 10px;
+        border-radius: 20px;
+        background-color: #ebf4ff;
+        color: #3182ce;
+    }
+    .rec-stats {
+        display: flex;
+        justify-content: space-around;
+        padding-top: 15px;
+        border-top: 1px solid #edf2f7;
+    }
+    .rec-stat {
+        display: flex;
+        flex-direction: column;
+    }
+    .rec-stat-val {
+        font-weight: 700;
+        color: #2d3748;
+        font-size: 1.1rem;
+    }
+    .rec-stat-lbl {
+        font-size: 0.8rem;
+        color: #718096;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4" dir="rtl">
+    
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="row mb-5">
+        <div class="col-12">
+            <h2 class="mb-4" style="font-family: 'Tajawal', sans-serif; font-weight: 700; color: #2c3e50;">نظرة عامة على الوكالة</h2>
+        </div>
+        
+        <div class="col-md-6 mb-4">
+            <div class="kpi-card text-center">
+                <div class="kpi-value">{{ stats.shortlists_count }}</div>
+                <div class="kpi-label"><i class="fas fa-list ms-2"></i> القوائم المنشأة</div>
+            </div>
+        </div>
+        
+        <div class="col-md-6 mb-4">
+            <div class="kpi-card text-center" style="border-right-color: #2ecc71;">
+                <div class="kpi-value">{{ stats.saved_influencers_count }}</div>
+                <div class="kpi-label"><i class="fas fa-users ms-2"></i> إجمالي المؤثرين المحفوظين</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12 d-flex justify-content-between align-items-center mb-4">
+            <h3 style="font-family: 'Tajawal', sans-serif; font-weight: 700; color: #2c3e50;">
+                <i class="fas fa-magic text-warning ms-2"></i> ترشيحات مخصصة لك
+            </h3>
+        </div>
+        
+        {% if recommendations %}
+            {% for inf in recommendations %}
+            <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
+                <div class="recommendation-card">
+                    <div class="recommendation-header">
+                        {% set pic = inf.profile_picture %}
+                        {% if not pic %}
+                            {% if inf.socialaccounts and inf.socialaccounts|length > 0 %}
+                                {% set pic = inf.socialaccounts[0].profile_picture %}
+                            {% endif %}
+                        {% endif %}
+                        <img src="{{ pic or '/static/assets/img/default-avatar.png' }}" class="rec-avatar" alt="Avatar">
+                    </div>
+                    <div class="recommendation-body">
+                        <div class="rec-name">
+                            <a href="{{ url_for('home_blueprint.influencer_detail', id=inf.id) }}" class="text-dark text-decoration-none hover-primary">{{ inf.full_name }}</a>
+                        </div>
+                        <div class="rec-platforms">
+                            {% for acc in inf.socialaccounts %}
+                                <span class="badge"><i class="fab fa-{{ acc.platform.name_english|lower }} ms-1"></i> {{ acc.platform.name }}</span>
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="rec-stats">
+                            {% set max_f = 0 %}
+                            {% set max_l = 0 %}
+                            {% for acc in inf.socialaccounts %}
+                                {% if acc.followers and acc.followers > max_f %}
+                                    {% set max_f = acc.followers %}
+                                {% endif %}
+                                {% if acc.likes and acc.likes > max_l %}
+                                    {% set max_l = acc.likes %}
+                                {% endif %}
+                            {% endfor %}
+                            
+                            <div class="rec-stat">
+                                <span class="rec-stat-val">
+                                    {% if max_f > 1000000 %}{{ "%.1f"|format(max_f / 1000000) }}M
+                                    {% elif max_f > 1000 %}{{ "%.1f"|format(max_f / 1000) }}K
+                                    {% else %}{{ max_f }}{% endif %}
+                                </span>
+                                <span class="rec-stat-lbl">متابع</span>
+                            </div>
+                            
+                            <div class="rec-stat">
+                                <span class="rec-stat-val">
+                                    {% if max_f > 0 %}
+                                        {{ "%.1f"|format((max_l / max_f) * 100) }}%
+                                    {% else %}
+                                        0%
+                                    {% endif %}
+                                </span>
+                                <span class="rec-stat-lbl">تفاعل</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="col-12 text-center py-5">
+                <div class="alert alert-info rounded-3 shadow-sm d-inline-block px-5 py-4">
+                    <i class="fas fa-info-circle fa-2x mb-3 text-info"></i>
+                    <h5 class="mb-3">لا توجد ترشيحات متاحة حالياً</h5>
+                    <p class="text-muted mb-0">يرجى الذهاب إلى إعدادات الحملة وتحديد اهتماماتك (Niches) للحصول على ترشيحات دقيقة.</p>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

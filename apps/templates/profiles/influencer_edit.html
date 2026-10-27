@@ -1,0 +1,300 @@
+{% extends "layouts/base.html" %}
+
+{% block title %} تفاصيل ملف {% endblock %} 
+{% block header_title %} تفاصيل الملف {% endblock %}
+{% block header_profile_image %}
+<img src="{{ influencer.profile_picture if influencer.profile_picture else 'https://via.placeholder.com/150' }}"/>
+<!-- <img src="{{ url_for('static', filename='profile_pictures/' + influencer.profile_picture) if influencer.profile_picture else 'https://via.placeholder.com/150' }}" /> -->
+{% endblock %}
+
+
+<!-- Specific Page CSS goes HERE  -->
+{% block stylesheets %}{% endblock stylesheets %}
+
+{% block content %}
+
+    <main>
+        
+        {% include 'includes/preloader.html' %}
+
+        <section class="section section-md pb-5">
+            <div class="container-fluid px-4" dir="rtl">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center py-4">
+                    <div class="d-block mb-4 mb-md-0">
+                        <h2 class="h4">تفاصيل المؤثر</h2>
+                        <p class="mb-0 text-muted">إدارة بيانات المؤثر، الحسابات المرتبطة، وتحديثات الأداء</p>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white border-bottom p-0">
+                        <ul class="nav nav-tabs px-4 pt-3" id="influencerTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active fw-bold text-dark" id="personal-tab" data-bs-toggle="tab" data-bs-target="#personal" type="button" role="tab" aria-controls="personal" aria-selected="true">
+                                    <i class="fas fa-user-edit text-primary me-2"></i> البيانات الشخصية
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link fw-bold text-dark" id="social-tab" data-bs-toggle="tab" data-bs-target="#social" type="button" role="tab" aria-controls="social" aria-selected="false">
+                                    <i class="fas fa-share-alt text-info me-2"></i> الحسابات والمنصات
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link fw-bold text-dark" id="analytics-tab" data-bs-toggle="tab" data-bs-target="#analytics" type="button" role="tab" aria-controls="analytics" aria-selected="false">
+                                    <i class="fas fa-chart-line text-success me-2"></i> سجل الأداء
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="tab-content" id="influencerTabsContent">
+                            
+                            <!-- TAB 1: Personal Data -->
+                            <div class="tab-pane fade show active" id="personal" role="tabpanel" aria-labelledby="personal-tab">
+                                <form method="POST" enctype="multipart/form-data" action="{{ url_for('profiles_blueprint.influencer_edit', influencer_id=influencer.id) }}" class="mt-2">
+                                    {{ form.hidden_tag() }}
+                                    
+                                    <div class="row g-4">
+                                        <div class="col-md-6">
+                                            <div class="form-group mb-3">
+                                                <label class="form-label fw-bold">{{ form.full_name.label }}</label>
+                                                {{ form.full_name(class_='form-control shadow-sm') }}
+                                                {% for error in form.full_name.errors %}<span class="text-danger small">{{ error }}</span>{% endfor %}
+                                            </div>
+                                            <div class="form-group mb-3">
+                                                <label class="form-label fw-bold">{{ form.email.label }}</label>
+                                                {{ form.email(class_='form-control shadow-sm') }}
+                                                {% for error in form.email.errors %}<span class="text-danger small">{{ error }}</span>{% endfor %}
+                                            </div>
+                                            <div class="form-group mb-3">
+                                                <label class="form-label fw-bold">{{ form.phone.label }}</label>
+                                                {{ form.phone(class_='form-control shadow-sm', dir='ltr') }}
+                                                {% for error in form.phone.errors %}<span class="text-danger small">{{ error }}</span>{% endfor %}
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="col-md-6">
+                                            <div class="form-group mb-3">
+                                                <label class="form-label fw-bold">{{ form.country.label }}</label>
+                                                {{ form.country(class_='form-control shadow-sm') }}
+                                                {% for error in form.country.errors %}<span class="text-danger small">{{ error }}</span>{% endfor %}
+                                            </div>
+                                            <div class="form-group mb-3">
+                                                <label class="form-label fw-bold">{{ form.city.label }}</label>
+                                                {{ form.city(class_='form-control shadow-sm') }}
+                                                {% for error in form.city.errors %}<span class="text-danger small">{{ error }}</span>{% endfor %}
+                                            </div>
+                                            <div class="form-group mb-3">
+                                                <label class="form-label fw-bold">{{ form.gender.label }}</label>
+                                                {{ form.gender(class_='form-select shadow-sm') }}
+                                                {% for error in form.gender.errors %}<span class="text-danger small">{{ error }}</span>{% endfor %}
+                                            </div>
+                                            <div class="form-group mb-3">
+                                                <label class="form-label fw-bold">{{ form.profile_picture.label }}</label>
+                                                {{ form.profile_picture(class_='form-control shadow-sm') }}
+                                                {% for error in form.profile_picture.errors %}<span class="text-danger small">{{ error }}</span>{% endfor %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <hr class="my-4">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <button type="submit" class="btn btn-primary shadow-sm rounded-pill px-4" id="submitButton" disabled>
+                                            <i class="fas fa-save ms-1"></i> حفظ التعديلات
+                                        </button>
+                                        <button type="button" class="btn btn-outline-danger shadow-sm rounded-pill px-4" onclick="openConfirmationModal('هل أنت متأكد من الحذف؟ سيتم حذف جميع الحسابات التابعة أيضاً.','{{ url_for("profiles_blueprint.influencer_delete", influencer_id=influencer.id) }}');">
+                                            <i class="fas fa-trash-alt ms-1"></i> حذف المؤثر
+                                        </button>
+                                    </div>
+
+                                    {% with messages = get_flashed_messages(with_categories=True) %}
+                                        {% if messages %}
+                                        <div class="mt-4">
+                                            {% for category, message in messages %}
+                                            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                                                {{ message }}
+                                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                        {% endif %}
+                                    {% endwith %}
+                                </form>
+                            </div>
+
+                            <!-- TAB 2: Social Accounts -->
+                            <div class="tab-pane fade" id="social" role="tabpanel" aria-labelledby="social-tab">
+                                <div class="d-flex justify-content-between align-items-center mb-4">
+                                    <h5 class="fw-bold mb-0">الحسابات المرتبطة</h5>
+                                    <a href="{{ url_for('social_blueprint.socialaccount_add', influencer_id=influencer.id) }}" class="btn btn-sm btn-primary rounded-pill shadow-sm">
+                                        <i class="fas fa-plus ms-1"></i> إضافة حساب
+                                    </a>
+                                </div>
+                                
+                                {% if influencer.socialaccounts %}
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>المنصة</th>
+                                                <th>إسم المستخدم</th>
+                                                <th>نوع المحتوى</th>
+                                                <th>الرابط</th>
+                                                <th class="text-center">صورة الحساب</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>                
+                                            {% for socialaccount in influencer.socialaccounts %}
+                                            <tr>
+                                                <td><span class="badge bg-secondary"><i class="fab fa-{{ socialaccount.platform.name_english|lower }} ms-1"></i> {{ socialaccount.platform.name }}</span></td>
+                                                <td>
+                                                    <a href="{{ url_for('social_blueprint.socialaccount_edit', socialaccount_id=socialaccount.id) }}" class="fw-bold text-decoration-none">
+                                                        @{{ socialaccount.username }}
+                                                    </a>
+                                                </td>
+                                                <td>{{ socialaccount.content or '-' }}</td>
+                                                <td><a href="{{ socialaccount.external_url }}" target="_blank" class="text-primary"><i class="fas fa-external-link-alt"></i> عرض</a></td>
+                                                <td class="text-center">
+                                                    <img src="{{ url_for('static', filename='profile_pictures/' + socialaccount.profile_picture) if socialaccount.profile_picture else 'https://via.placeholder.com/150' }}" alt="Profile" class="rounded-circle shadow-sm" width="40" height="40" style="object-fit: cover;">
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                {% else %}
+                                <div class="alert alert-info text-center">لا توجد حسابات مضافة حتى الآن.</div>
+                                {% endif %}
+
+                                <!-- Scrape Results (if any) -->
+                                {% if profile_data_list or (profile_data and not profile_data.get('error')) %}
+                                <h5 class="fw-bold mt-5 mb-3">بيانات محدثة من المنصات</h5>
+                                <div class="row g-4">
+                                    {% set p_list = profile_data_list if profile_data_list else [profile_data] %}
+                                    {% for pd in p_list %}
+                                        {% if not pd.get('error') %}
+                                        <div class="col-md-6 col-lg-4">
+                                            <div class="card h-100 shadow-sm border-0">
+                                                <img src="{{ pd.get('profile_picture', 'https://via.placeholder.com/300') }}" class="card-img-top" alt="{{ pd.get('username') }}" style="height: 180px; object-fit: cover;">
+                                                <div class="card-body">
+                                                    <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                                                        <h6 class="mb-0 fw-bold"><i class="fab fa-{{ pd.get('platform_name_english', pd.get('platform'))|lower }} text-primary ms-1"></i> @{{ pd.get('username') }}</h6>
+                                                        <span class="badge bg-light text-dark">{{ pd.get('platform') }}</span>
+                                                    </div>
+                                                    <h5 class="card-title text-truncate" title="{{ pd.get('public_profile_name') }}">{{ pd.get('public_profile_name') }}</h5>
+                                                    
+                                                    <div class="d-flex justify-content-between mt-3 mb-2 small text-muted">
+                                                        <span><i class="fas fa-users"></i> المتابعين</span>
+                                                        <span class="fw-bold text-dark" dir="ltr">{{ pd.get('followers', 0) }}</span>
+                                                    </div>
+                                                    <div class="d-flex justify-content-between mb-2 small text-muted">
+                                                        <span><i class="fas fa-heart"></i> الإعجابات</span>
+                                                        <span class="fw-bold text-dark" dir="ltr">{{ pd.get('likes', 0) }}</span>
+                                                    </div>
+                                                    <div class="d-flex justify-content-between mb-3 small text-muted">
+                                                        <span><i class="fas fa-video"></i> المقاطع</span>
+                                                        <span class="fw-bold text-dark" dir="ltr">{{ pd.get('posts', 0) }}</span>
+                                                    </div>
+                                                    
+                                                    <p class="card-text small text-muted text-truncate-2" title="{{ pd.get('bio_text') }}">{{ pd.get('bio_text') or 'لا يوجد بايو' }}</p>
+                                                </div>
+                                                <div class="card-footer bg-white border-0 pt-0">
+                                                    <button type="button" class="btn btn-sm btn-outline-primary w-100 rounded-pill" id="downloadButton" data-influencer-id="{{ influencer.id }}" data-picture-url="{{ pd.get('profile_picture') }}">
+                                                        تحديث صورة الملف الشخصي
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- TAB 3: Analytics / Updates -->
+                            <div class="tab-pane fade" id="analytics" role="tabpanel" aria-labelledby="analytics-tab">
+                                <h5 class="fw-bold mb-4">آخر التحديثات للأداء (أحدث 5 سجلات)</h5>
+                                {% if scanresults %}
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>المنصة</th>
+                                                <th>التاريخ</th>
+                                                <th>الوقت</th>
+                                                <th>المتابعين</th>
+                                                <th>الإعجابات</th>
+                                                <th>المنشورات</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for scanresult in scanresults %}
+                                                <tr>
+                                                    <td><span class="badge bg-info text-dark">{{ scanresult.socialaccount.platform.name }}</span></td>
+                                                    <td dir="ltr" class="text-end">{{ scanresult.creation_date }}</td>
+                                                    <td dir="ltr" class="text-end">{{ scanresult.creation_time.strftime('%H:%M') if scanresult.creation_time else '00:00' }}</td>
+                                                    <td class="fw-bold text-success" dir="ltr">{{ scanresult.followers }}</td>
+                                                    <td class="text-muted" dir="ltr">{{ scanresult.likes }}</td>
+                                                    <td class="text-muted" dir="ltr">{{ scanresult.posts }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                {% else %}
+                                <div class="alert alert-warning text-center">لا توجد سجلات أداء سابقة لهذا المؤثر.</div>
+                                {% endif %}
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section section-md">
+        </section>
+
+    </main>
+
+    {% include 'includes/footer.html' %}
+
+{% endblock content %}
+
+<!-- Specific Page JS goes HERE  -->
+{% block javascripts %}
+    <script>
+        // Get the form element
+        const form = document.querySelector('form');
+
+        // Add event listener to form inputs
+        form.addEventListener('input', function () {
+            // Enable the submit button when the form has changes
+            document.getElementById('submitButton').disabled = false;
+            document.getElementById('addButton').disabled = true;
+        });
+    </script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            $("#downloadButton").click(function () {
+                var influencerId = $(this).data('influencer-id');
+                var pictureUrl = $(this).data('picture-url');
+                $.ajax({
+                    url: '/influencer/update_picture',  // Replace with the actual URL of the update_image function
+                    type: 'post',
+                    data: {
+                        'influencer_id': influencerId,
+                        'picture_url': pictureUrl
+                    },
+                    success: function (response) {
+                        window.location.href = response.redirect_url;
+                    },
+                    error: function (error) {
+                        window.location.href = response.redirect_url;
+                    }
+                });
+            });
+        });
+    </script>
+{% endblock javascripts %}

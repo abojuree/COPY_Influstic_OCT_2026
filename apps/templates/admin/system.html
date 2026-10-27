@@ -1,0 +1,241 @@
+{% extends "layouts/base.html" %}
+
+{% block title %} إدارة النظام - لوحة الإدارة {% endblock %}
+{% block header_title %} النظام والأمان {% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+<div class="d-flex justify-content-end mb-3">
+    <form method="GET" class="d-inline-block">
+        <div class="input-group input-group-sm">
+            <span class="input-group-text bg-white fw-bold"><i class="fas fa-calendar-alt me-1"></i> المدة الزمنية</span>
+            <select name="range" class="form-select form-select-sm" onchange="this.form.submit()">
+                <option value="today" {% if current_range == 'today' %}selected{% endif %}>اليوم</option>
+                <option value="7days" {% if current_range == '7days' %}selected{% endif %}>آخر 7 أيام</option>
+                <option value="30days" {% if current_range == '30days' %}selected{% endif %}>آخر 30 يوم</option>
+                <option value="all" {% if current_range == 'all' %}selected{% endif %}>الكل</option>
+            </select>
+        </div>
+    </form>
+</div>
+<div class="row">
+    <div class="col-md-6">
+        <div class="card bg-white shadow-sm mb-4">
+            <div class="card-body">
+                <h6 class="text-muted">إجمالي المستخدمين</h6>
+                <h3>{{ total_users }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card bg-white shadow-sm mb-4">
+            <div class="card-body">
+                <h6 class="text-muted">سجلات قاعدة البيانات (تقديري)</h6>
+                <h3>{{ total_db_records }}</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-header border-0">
+        <h2 class="fs-5 fw-bold mb-0">إدارة قاعدة البيانات والنسخ الاحتياطي</h2>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4">
+                <form action="{{ url_for('authentication_blueprint.backup_database') }}" method="POST">
+                    <button type="submit" class="btn btn-primary w-100 mb-2">
+                        <i class="fas fa-database"></i> إنشاء نسخة احتياطية
+                    </button>
+                </form>
+            </div>
+            <div class="col-md-4">
+                <form action="{{ url_for('authentication_blueprint.export_database_excel') }}" method="POST">
+                    <button type="submit" class="btn btn-outline-primary w-100 mb-2">
+                        <i class="fas fa-download"></i> تصدير قاعدة البيانات (Excel)
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-header border-0 d-flex justify-content-between align-items-center">
+        <h2 class="fs-5 fw-bold mb-0">إدارة المستخدمين</h2>
+        <div>
+            <a href="{{ url_for('authentication_blueprint.create_role') }}" class="btn btn-secondary shadow-sm rounded-pill px-3 me-2">
+                <i class="fas fa-shield-alt ms-1"></i> إضافة دور جديد
+            </a>
+            <a href="{{ url_for('authentication_blueprint.user_create') }}" class="btn btn-primary shadow-sm rounded-pill px-4">
+                <i class="fas fa-plus ms-1"></i> إضافة موظف جديد
+            </a>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table id="systemTable" class="table align-items-center table-flush">
+            <thead class="thead-light">
+                <tr>
+                    <th scope="col">اسم المستخدم</th>
+                    <th scope="col">البريد الإلكتروني</th>
+                    <th scope="col">الوكالة التابعة</th>
+                    <th scope="col">الصلاحية</th>
+                    <th scope="col">الحالة</th>
+                    <th scope="col"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in users_data %}
+                <tr>
+                    <td>{{ u.username }}</td>
+                    <td>{{ u.email }}</td>
+                    <td>{{ u.agency }}</td>
+                    <td><span class="badge {% if u.role == 'admin' %}bg-danger{% else %}bg-info{% endif %}">{{ u.role }}</span></td>
+                    <td><span class="badge bg-success">{{ u.status }}</span></td>
+                    <td>
+                        <div class="dropdown">
+                            <button class="btn btn-link text-muted p-0" type="button"
+                                data-bs-toggle="dropdown"
+                                data-bs-offset="0,4"
+                                aria-expanded="false">
+                                <i class="fas fa-ellipsis-v fs-5"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 py-1" dir="rtl" style="min-width: 180px; z-index: 9999;">
+                                <li><a class="dropdown-item d-flex align-items-center gap-2 py-2" href="{{ url_for('authentication_blueprint.user_edit', user_id=u.id) }}"><i class="fas fa-pencil-alt fa-fw text-primary"></i> <span>تعديل البيانات</span></a></li>
+                                <li><a class="dropdown-item d-flex align-items-center gap-2 py-2" href="{{ url_for('authentication_blueprint.user_edit', user_id=u.id) }}#permissions-section"><i class="fas fa-link fa-fw text-info"></i> <span>إدارة الصلاحيات</span></a></li>
+                                <li><hr class="dropdown-divider my-1"></li>
+                                <li><a class="dropdown-item d-flex align-items-center gap-2 py-2 text-danger" href="#" onclick="openConfirmationModal('هل أنت متأكد من تعطيل هذا الحساب؟','{{ url_for('authentication_blueprint.delete_user', user_id=u.id) }}');"><i class="fas fa-ban fa-fw text-danger"></i> <span>تعطيل الحساب</span></a></li>
+                            </ul>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+</div>
+
+<!-- جدول الأدوار الحالية (Current Roles Table) -->
+<div class="card shadow-sm mb-4 mt-5">
+    <div class="card-header border-0 d-flex justify-content-between align-items-center bg-white border-bottom py-3">
+        <h5 class="fs-5 fw-bold mb-0"><i class="fas fa-user-shield text-primary ms-2"></i> أدوار النظام والصلاحيات</h5>
+        <a href="{{ url_for('authentication_blueprint.create_role') }}" class="btn btn-sm btn-primary">
+            <i class="fas fa-plus ms-1"></i> إضافة دور جديد
+        </a>
+    </div>
+    <div class="table-responsive">
+        <table class="table align-items-center table-flush table-hover" id="rolesTable">
+            <thead class="table-light text-muted">
+                <tr>
+                    <th scope="col" class="ps-4">اسم الدور</th>
+                    <th scope="col">الوصف</th>
+                    <th scope="col">الحالة</th>
+                    <th scope="col" class="text-start pe-4">الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for role in roles %}
+                <tr>
+                    <td class="fw-bold ps-4">{{ role.name }}</td>
+                    <td>{{ role.description }}</td>
+                    <td>
+                        {% if role.is_active %}
+                        <span class="badge bg-success">نشط</span>
+                        {% else %}
+                        <span class="badge bg-secondary">غير نشط</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-start pe-4">
+                        <a href="{{ url_for('authentication_blueprint.role_edit', role_id=role.id) }}" class="btn btn-sm btn-outline-info rounded-circle me-1" title="تعديل">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <form action="{{ url_for('authentication_blueprint.delete_role', role_id=role.id) }}" method="POST" class="d-inline-block" onsubmit="return confirm('هل أنت متأكد من حذف هذا الدور؟ جميع المستخدمين المرتبطين بهذا الدور سيفقدونه.');">
+                            <button type="submit" class="btn btn-sm btn-outline-danger rounded-circle" title="حذف">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="4" class="text-center text-muted py-4">لا توجد أدوار مخصصة حالياً</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+<script>
+$(document).ready(function() {
+    function initFixedDropdowns() {
+        document.querySelectorAll('#systemTable [data-bs-toggle="dropdown"]').forEach(function(el) {
+            var existing = bootstrap.Dropdown.getInstance(el);
+            if (existing) {
+                existing.dispose();
+            }
+
+            new bootstrap.Dropdown(el, {
+                popperConfig: {
+                    strategy: 'fixed',
+                    placement: 'top-start'
+                }
+            });
+        });
+    }
+
+    var table = $('#systemTable').DataTable({
+        "pageLength": 10,
+        "language": {
+            "search": "بحث:",
+            "lengthMenu": "عرض _MENU_ سجلات",
+            "info": "عرض _START_ إلى _END_ من _TOTAL_ سجلات",
+            "emptyTable": "لا توجد بيانات متاحة في الجدول",
+            "infoEmpty": "عرض 0 إلى 0 من 0 سجلات",
+            "infoFiltered": "(تصفية من _MAX_ إجمالي السجلات)",
+            "zeroRecords": "لم يتم العثور على سجلات مطابقة",
+            "paginate": {
+                "first": "الأول",
+                "last": "الأخير",
+                "next": "التالي",
+                "previous": "السابق"
+            }
+        },
+        initComplete: function () {
+            initFixedDropdowns();
+
+            this.api().columns([3]).every(function () {
+                var column = this;
+                var select = $('<select class="form-select form-select-sm ms-2 d-inline-block w-auto"><option value="">تصفية الصلاحية (الكل)</option></select>')
+                    .appendTo($('.dataTables_filter', column.table().container()))
+                    .on('change', function () {
+                        var val = $.fn.dataTable.util.escapeRegex($(this).val());
+                        column.search(val ? '^'+val+'$' : '', true, false).draw();
+                    });
+
+                column.data().unique().sort().each(function (d, j) {
+                    var text = $('<div>'+d+'</div>').text().trim();
+                    if (text) {
+                        select.append('<option value="'+text+'">'+text+'</option>');
+                    }
+                });
+            });
+        }
+    });
+
+    table.on('draw', function () {
+        initFixedDropdowns();
+    });
+});
+</script>
+{% endblock javascripts %}

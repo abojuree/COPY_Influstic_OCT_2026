@@ -1,0 +1,236 @@
+{% extends "layouts/base.html" %}
+
+{% block title %} تفاصيل المؤثر - {{ influencer.full_name }} {% endblock %}
+{% block header_title %} المؤثرين {% endblock %}
+{% block header_sub_title %}تفاصيل المؤثر{% endblock %}
+
+{% block stylesheets %}
+<style>
+    .avatar-lg {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 4px solid #fff;
+        box-shadow: 0 4px 6px rgba(0,0,0,.1);
+    }
+    .metric-card {
+        transition: transform 0.2s;
+    }
+    .metric-card:hover {
+        transform: translateY(-3px);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4" dir="rtl">
+    
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="row">
+        <!-- Profile Sidebar -->
+        <div class="col-12 col-xl-4 mb-4">
+            <div class="card shadow-sm border-0 text-center p-4 h-100">
+                <div class="card-body">
+                    {% set pic = influencer.profile_picture %}
+                    {% if not pic and influencer.socialaccounts %}
+                        {% set pic = influencer.socialaccounts[0].profile_picture %}
+                    {% endif %}
+                    
+                    <img src="{{ pic or '/static/assets/img/default-avatar.png' }}" class="avatar-lg mb-3 mx-auto" alt="Avatar">
+                    
+                    <h3 class="fw-bold text-dark mb-1">{{ influencer.full_name }}</h3>
+                    <p class="text-muted mb-3"><i class="fas fa-map-marker-alt"></i> {{ influencer.country or 'غير محدد' }} {{ ('- ' ~ influencer.city) if influencer.city else '' }}</p>
+                    
+                    <div class="d-flex justify-content-center mb-4">
+                        {% for acc in influencer.socialaccounts %}
+                            {% set social_url = acc.external_url %}
+                            {% if not social_url %}
+                                {% if acc.platform.name_english|lower == 'instagram' %}
+                                    {% set social_url = 'https://instagram.com/' ~ acc.username %}
+                                {% elif acc.platform.name_english|lower == 'tiktok' %}
+                                    {% set social_url = 'https://tiktok.com/@' ~ acc.username %}
+                                {% elif acc.platform.name_english|lower == 'youtube' %}
+                                    {% set social_url = 'https://youtube.com/@' ~ acc.username %}
+                                {% elif acc.platform.name_english|lower == 'snapchat' %}
+                                    {% set social_url = 'https://snapchat.com/add/' ~ acc.username %}
+                                {% else %}
+                                    {% set social_url = '#' %}
+                                {% endif %}
+                            {% endif %}
+                            <a href="{{ social_url }}" target="_blank" class="btn btn-sm btn-icon-only btn-outline-{{ acc.platform.name_english|lower }} me-2 rounded-circle" title="{{ acc.platform.name }}">
+                                <i class="fab fa-{{ acc.platform.name_english|lower }}"></i>
+                            </a>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="text-start mt-4">
+                        <h6 class="fw-bold text-dark mb-3">معلومات إضافية</h6>
+                        {% if influencer.email %}
+                            <p class="mb-2 text-muted"><i class="fas fa-envelope me-2 w-20 text-center"></i> {{ influencer.email }}</p>
+                        {% endif %}
+                        {% if influencer.phone %}
+                            <p class="mb-2 text-muted d-flex align-items-center">
+                                <i class="fas fa-phone me-2 w-20 text-center"></i> 
+                                <span dir="ltr" style="text-align: right; display: inline-block; flex: 1;">{{ influencer.phone }}</span>
+                            </p>
+                        {% endif %}
+                        {% if influencer.gender %}
+                            <p class="mb-2 text-muted"><i class="fas fa-venus-mars me-2 w-20 text-center"></i> {{ influencer.gender }}</p>
+                        {% endif %}
+                        {% if influencer.category %}
+                            <p class="mb-2 text-muted"><i class="fas fa-tags me-2 w-20 text-center"></i> {{ influencer.category }}</p>
+                        {% endif %}
+                        
+                        {% if current_user.role == 'admin' %}
+                            <button type="button" class="btn btn-sm btn-outline-primary mt-3 w-100" data-bs-toggle="modal" data-bs-target="#editContactModal">
+                                <i class="fas fa-edit me-1"></i> تعديل البيانات
+                            </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Edit Contact Modal -->
+            <div class="modal fade" id="editContactModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content text-start">
+                        <div class="modal-header">
+                            <h5 class="modal-title fw-bold">تعديل بيانات المؤثر</h5>
+                            <button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <form action="{{ url_for('home_blueprint.edit_influencer_info', id=influencer.id) }}" method="POST">
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">البريد الإلكتروني</label>
+                                    <input type="email" name="email" class="form-control" value="{{ influencer.email or '' }}">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">رقم الهاتف</label>
+                                    <input type="text" name="phone" class="form-control" dir="ltr" value="{{ influencer.phone or '' }}">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">الدولة</label>
+                                    <input type="text" name="country" class="form-control" value="{{ influencer.country or '' }}">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">المدينة</label>
+                                    <input type="text" name="city" class="form-control" value="{{ influencer.city or '' }}">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">تصنيف المؤثر (Category)</label>
+                                    <input type="text" name="category" class="form-control" value="{{ influencer.category or '' }}" placeholder="رياضة, تقنية, إلخ...">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">الجنس</label>
+                                    <select name="gender" class="form-select">
+                                        <option value="" {% if not influencer.gender %}selected{% endif %}>غير محدد</option>
+                                        <option value="Male" {% if influencer.gender == 'Male' %}selected{% endif %}>ذكر (Male)</option>
+                                        <option value="Female" {% if influencer.gender == 'Female' %}selected{% endif %}>أنثى (Female)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                                <button type="submit" class="btn btn-primary">حفظ التعديلات</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+        
+        <!-- Metrics Area -->
+        <div class="col-12 col-xl-8 mb-4">
+            <h4 class="mb-3 fw-bold text-dark" style="font-family: 'Tajawal', sans-serif;">تحليل الأداء عبر المنصات</h4>
+            
+            {% if not influencer.socialaccounts %}
+                <div class="alert alert-info">لا توجد حسابات اجتماعية مرتبطة بهذا المؤثر حالياً.</div>
+            {% else %}
+                <div class="row">
+                    {% for metric in account_metrics %}
+                    {% set acc = metric.account %}
+                    <div class="col-12 mb-4">
+                        <div class="card shadow-sm border-0 h-100">
+                            <div class="card-header bg-white border-0 py-3 d-flex align-items-center">
+                                <i class="fab fa-{{ acc.platform.name_english|lower }} fa-2x text-{{ acc.platform.name_english|lower }} ms-3"></i>
+                                <h5 class="mb-0 fw-bold">{{ acc.platform.name }} <span class="text-muted fs-6 fw-normal" dir="ltr">@{{ acc.username }}</span></h5>
+                            </div>
+                            <div class="card-body pt-0">
+                                {% if acc.bio_text %}
+                                    <p class="text-muted small mb-4 bg-light p-3 rounded text-center">{{ acc.bio_text }}</p>
+                                {% endif %}
+                                
+                                <div class="row text-center">
+                                    <div class="col-4">
+                                        <div class="metric-card p-3 rounded bg-light border">
+                                            <h6 class="text-muted small mb-1">المتابعين</h6>
+                                            <h4 class="fw-bold text-dark mb-0">
+                                                {{ "{:,}".format(metric.followers | default(0, true)) }}
+                                            </h4>
+                                        </div>
+                                    </div>
+                                    {% if acc.platform.name_english|lower != 'snapchat' %}
+                                    <div class="col-4">
+                                        <div class="metric-card p-3 rounded bg-light border">
+                                            <h6 class="text-muted small mb-1">متوسط المشاهدات</h6>
+                                            <h4 class="fw-bold text-dark mb-0">
+                                                {{ "{:,}".format(metric.avg_views | default(0, true)) }}
+                                            </h4>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="metric-card p-3 rounded bg-light border">
+                                            <h6 class="text-muted small mb-1">متوسط الإعجابات والتعليقات</h6>
+                                            <h4 class="fw-bold text-dark mb-0">
+                                                {% set avg_interactions = (metric.avg_likes | default(0, true)) + (metric.avg_comments | default(0, true)) %}
+                                                {{ "{:,}".format(avg_interactions) }}
+                                            </h4>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                {% if acc.platform.name_english|lower == 'tiktok' %}
+                                <div class="row text-center mt-3">
+                                    <div class="col-6">
+                                        <div class="metric-card p-3 rounded bg-light border">
+                                            <h6 class="text-muted small mb-1">المشاركات (Shares)</h6>
+                                            <h4 class="fw-bold text-dark mb-0">
+                                                {{ metric.avg_shares | default('N/A', true) }}
+                                            </h4>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="metric-card p-3 rounded bg-light border">
+                                            <h6 class="text-muted small mb-1">الحفظ (Saves)</h6>
+                                            <h4 class="fw-bold text-dark mb-0">
+                                                {{ metric.avg_saves | default('N/A', true) }}
+                                            </h4>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+
+{% endblock %}

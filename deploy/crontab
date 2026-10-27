@@ -1,0 +1,20 @@
+# Influencers Analytics Platform — Cron Jobs
+# =============================================
+# Replaces Render.com's cron service.
+# Install with: crontab deploy/crontab
+#
+# EDIT THE PATHS BELOW TO MATCH YOUR SERVER
+
+# Environment
+FLASK_ENV=production
+DEBUG_MODE=False
+PYTHONUNBUFFERED=true
+
+# Run social profile scan every 2 days at 06:00 AM (matches original Render schedule)
+0 6 */2 * * cd /opt/socialscannerw && /opt/socialscannerw/venv/bin/python cron_scan.py >> /var/log/socialscannerw/cron_scan.log 2>&1
+
+# Database backup — daily at 03:00 AM
+0 3 * * * cd /opt/socialscannerw && /opt/socialscannerw/venv/bin/python db_backup.py >> /var/log/socialscannerw/db_backup.log 2>&1
+
+# Log rotation — clean old cron logs weekly on Sunday at 02:00 AM
+0 2 * * 0 find /var/log/socialscannerw/ -name "*.log" -mtime +30 -delete

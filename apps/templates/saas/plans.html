@@ -1,0 +1,96 @@
+{% extends "layouts/base.html" %}
+
+{% block title %} اختيار الباقة {% endblock %}
+
+{% block stylesheets %}
+<style>
+    .rtl-container {
+        direction: rtl;
+        text-align: right;
+    }
+    .pricing-card-title {
+        font-weight: 700;
+        font-size: 1.5rem;
+    }
+    .pricing-card-price {
+        font-size: 2rem;
+        color: #2c3e50;
+    }
+    .active-plan-badge {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background-color: #28a745;
+        color: white;
+        padding: 5px 10px;
+        border-radius: 5px;
+        font-size: 0.8rem;
+    }
+</style>
+{% endblock stylesheets %}
+
+{% block content %}
+<div class="container-fluid py-4 rtl-container">
+    <div class="row justify-content-center">
+        <div class="col-12 text-center mb-4">
+            <h2 class="font-weight-bold">اختر الباقة المناسبة لوكالتك</h2>
+            <p class="text-muted">نقدم خططاً مرنة تتناسب مع احتياجات نموك</p>
+        </div>
+
+        <div class="col-12">
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </div>
+        
+        {% for plan in plans %}
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card h-100 position-relative shadow-sm {% if current_subscription and current_subscription.plan_id == plan.id %}border-success{% endif %}">
+                {% if current_subscription and current_subscription.plan_id == plan.id %}
+                <div class="active-plan-badge">الباقة الحالية</div>
+                {% endif %}
+                <div class="card-body text-center p-5">
+                    <h5 class="pricing-card-title text-primary">{{ plan.name }}</h5>
+                    <div class="my-4">
+                        <span class="pricing-card-price">${{ plan.price }}</span>
+                        <span class="text-muted">/ شهرياً</span>
+                    </div>
+                    <ul class="list-unstyled mb-4">
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i> تتبع حتى <strong>{{ plan.tracking_limit }}</strong> مؤثر
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i> إطلاق حتى <strong>{{ plan.campaign_limit }}</strong> حملات
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i> تقارير غير محدودة
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i> دعم فني مخصص
+                        </li>
+                    </ul>
+                    
+                    <form action="{{ url_for('saas_blueprint.select_plan', plan_id=plan.id) }}" method="POST">
+                        <button type="submit" class="btn btn-lg w-100 {% if current_subscription and current_subscription.plan_id == plan.id %}btn-outline-success{% else %}btn-primary{% endif %}">
+                            {% if current_subscription and current_subscription.plan_id == plan.id %}
+                                الباقة الحالية
+                            {% else %}
+                                اختيار الباقة
+                            {% endif %}
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock content %}

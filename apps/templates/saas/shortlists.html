@@ -1,0 +1,92 @@
+{% extends "layouts/base.html" %}
+
+{% block title %} قوائم المؤثرين {% endblock %}
+{% block header_title %} قوائم المؤثرين (الحملات) {% endblock %}
+
+{% block content %}
+<main>
+    {% include 'includes/preloader.html' %}
+    <section class="section-header">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>قوائم المؤثرين الخاصة بالوكالة</h2>
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createShortlistModal">
+                    <i class="fas fa-plus"></i> قائمة جديدة
+                </button>
+            </div>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <div class="row">
+                {% for shortlist in shortlists %}
+                <div class="col-12 col-md-6 col-lg-4 mb-4">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ shortlist.name }}</h5>
+                            <h6 class="card-subtitle mb-2 text-muted">
+                                <i class="fas fa-users"></i> {{ shortlist.influencers|length }} مؤثرين
+                            </h6>
+                            <p class="card-text">{{ shortlist.description[:100] + '...' if shortlist.description|length > 100 else shortlist.description }}</p>
+                            
+                            <div class="d-flex justify-content-between mt-3">
+                                <a href="{{ url_for('saas_blueprint.shortlist_detail', shortlist_id=shortlist.id) }}" class="btn btn-sm btn-info">عرض التفاصيل</a>
+                                <form action="{{ url_for('saas_blueprint.delete_shortlist', shortlist_id=shortlist.id) }}" method="POST" onsubmit="return confirm('هل أنت متأكد من حذف هذه القائمة؟');">
+                                    <button type="submit" class="btn btn-sm btn-danger"><i class="fas fa-trash"></i></button>
+                                </form>
+                            </div>
+                        </div>
+                        <div class="card-footer text-muted text-sm">
+                            تم الإنشاء في: {{ shortlist.created_at.strftime('%Y-%m-%d') }}
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="col-12 text-center py-5">
+                    <h4 class="text-muted">لا توجد قوائم مؤثرين بعد.</h4>
+                    <p>قم بإنشاء قائمة جديدة للبدء في تنظيم المؤثرين وحملاتك.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+</main>
+
+<!-- Create Shortlist Modal -->
+<div class="modal fade" id="createShortlistModal" tabindex="-1" aria-labelledby="createShortlistModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createShortlistModalLabel">إنشاء قائمة جديدة</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ url_for('saas_blueprint.create_shortlist') }}" method="POST">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="shortlistName" class="form-label">اسم القائمة</label>
+                        <input type="text" class="form-control" id="shortlistName" name="name" required placeholder="مثال: حملة صيف 2026">
+                    </div>
+                    <div class="mb-3">
+                        <label for="shortlistDescription" class="form-label">الوصف (اختياري)</label>
+                        <textarea class="form-control" id="shortlistDescription" name="description" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-primary">حفظ</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% include 'includes/footer.html' %}
+{% endblock content %}

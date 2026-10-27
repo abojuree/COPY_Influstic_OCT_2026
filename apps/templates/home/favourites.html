@@ -1,0 +1,127 @@
+{% extends "layouts/base.html" %}
+
+{% block title %} المفضلة {% endblock %}
+{% block header_title %} المؤثرين {% endblock %}
+{% block header_sub_title %} المفضلة {% endblock %}
+
+{% block stylesheets %}
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+<style>
+    .avatar-sm {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4" dir="rtl">
+    
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="row mb-4">
+        <div class="col-12 d-flex justify-content-between align-items-center">
+            <div>
+                <h3 style="font-family: 'Tajawal', sans-serif; font-weight: 700; color: #2c3e50;">
+                    <i class="fas fa-star text-warning ms-2"></i> قائمة المفضلة
+                </h3>
+                <p class="text-muted">المؤثرون الذين قمت بحفظهم للوصول السريع</p>
+            </div>
+            <a href="{{ url_for('home_blueprint.discover') }}" class="btn btn-outline-secondary rounded-pill px-4">
+                <i class="fas fa-arrow-right ms-1"></i> العودة للاستكشاف
+            </a>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table id="shortlistTable" class="table table-hover align-middle w-100">
+                    <thead class="table-light">
+                        <tr>
+                            <th>المؤثر</th>
+                            <th>المنصات</th>
+                            <th>إجمالي المتابعين</th>
+                            <th>الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for fav in favourites %}
+                        {% set inf = fav.influencer %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    {% set pic = inf.profile_picture %}
+                                    {% if not pic and inf.socialaccounts %}
+                                        {% set pic = inf.socialaccounts[0].profile_picture %}
+                                    {% endif %}
+                                    <img src="{{ pic or '/static/assets/img/default-avatar.png' }}" class="avatar-sm ms-3" alt="Avatar">
+                                    <div class="fw-bold text-dark">{{ inf.full_name }}</div>
+                                </div>
+                            </td>
+                            <td>
+                                {% for acc in inf.socialaccounts %}
+                                    <span class="badge bg-light text-dark border me-1 mb-1">
+                                        <i class="fab fa-{{ acc.platform.name_english|lower }} text-{{ acc.platform.name_english|lower }}"></i> {{ acc.platform.name }}
+                                    </span>
+                                {% endfor %}
+                            </td>
+                            <td>
+                                {% set total_f = 0 %}
+                                {% for acc in inf.socialaccounts %}
+                                    {% if acc.followers %}
+                                        {% set total_f = total_f + acc.followers %}
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% if total_f > 1000000 %}{{ "%.1f"|format(total_f / 1000000) }}M
+                                {% elif total_f > 1000 %}{{ "%.1f"|format(total_f / 1000) }}K
+                                {% else %}{{ total_f }}{% endif %}
+                            </td>
+                            <td>
+                                <form action="{{ url_for('home_blueprint.favourite_remove') }}" method="POST" class="d-inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}"/>
+                                    <input type="hidden" name="favourite_id" value="{{ fav.id }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3" title="إزالة من المفضلة" onclick="return confirm('هل أنت متأكد من إزالة هذا المؤثر من المفضلة؟');">
+                                        <i class="fas fa-trash-alt ms-1"></i> إزالة
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+<script>
+    $(document).ready(function() {
+        $('#shortlistTable').DataTable({
+            language: {
+                url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/ar.json'
+            },
+            responsive: true,
+            order: [[2, 'desc']] // Sort by followers initially
+        });
+    });
+</script>
+{% endblock %}

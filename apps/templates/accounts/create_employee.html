@@ -1,0 +1,124 @@
+{% extends "layouts/base.html" %}
+
+{% block title %} إضافة موظف جديد {% endblock %} 
+{% block header_title %} إضافة موظف جديد {%endblock %}
+
+{% block content %}
+<main>
+    {% include 'includes/preloader.html' %}
+    <section class="section-header pb-5">
+        <div class="container-fluid px-4" dir="rtl">
+            <div class="row mb-4 align-items-center">
+                <div class="col-md-6">
+                    <h2 style="font-family: 'Tajawal', sans-serif; font-weight: 700; color: #2c3e50;">
+                        <i class="fas fa-user-plus text-primary ms-2"></i> إضافة موظف جديد
+                    </h2>
+                    <p class="text-muted">إنشاء حساب موظف جديد وتحديد دوره الوظيفي وصلاحياته</p>
+                </div>
+            </div>
+
+            <form method="POST" action="{{ url_for('authentication_blueprint.user_create') }}">
+                <!-- Card 1: Employee Data -->
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-header bg-white border-bottom py-3">
+                        <h5 class="mb-0 fw-bold"><i class="fas fa-id-card ms-2"></i> بيانات الموظف</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="username" class="form-label">اسم الموظف</label>
+                                <input type="text" class="form-control" id="username" name="username" required value="{{ request.form.get('username', '') }}" oninvalid="this.setCustomValidity('هذا الحقل مطلوب')" oninput="this.setCustomValidity('')">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="email" class="form-label">البريد الإلكتروني</label>
+                                <input type="email" class="form-control" id="email" name="email" required value="{{ request.form.get('email', '') }}" oninvalid="this.setCustomValidity('هذا الحقل مطلوب')" oninput="this.setCustomValidity('')">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="phone" class="form-label">رقم الهاتف</label>
+                                <input type="text" class="form-control" id="phone" name="phone" value="{{ request.form.get('phone', '') }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="password" class="form-label">كلمة المرور</label>
+                                <input type="password" class="form-control" id="password" name="password" required oninvalid="this.setCustomValidity('هذا الحقل مطلوب')" oninput="this.setCustomValidity('')">
+                            </div>
+                            <div class="col-md-12">
+                                <label for="role_id" class="form-label">الدور الوظيفي</label>
+                                <select class="form-select" id="role_id" name="role_id" required oninvalid="this.setCustomValidity('هذا الحقل مطلوب')" oninput="this.setCustomValidity('')">
+                                    <option value="" selected disabled>اختر الدور الوظيفي...</option>
+                                    <option value="admin" {% if request.form.get('role_id') == 'admin' %}selected{% endif %}>مدير نظام (Admin)</option>
+                                    <option value="custom" {% if request.form.get('role_id') == 'custom' %}selected{% endif %}>دور خاص (Custom Role)</option>
+                                    {% for role in roles %}
+                                        <option value="{{ role.id }}" {% if request.form.get('role_id') == role.id|string %}selected{% endif %}>{{ role.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 2: Permissions Matrix -->
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 fw-bold"><i class="fas fa-key ms-2"></i> مصفوفة الصلاحيات (مخصصة)</h5>
+                        <div>
+                            <button type="button" class="btn btn-sm btn-outline-primary me-2" onclick="toggleAllPermissions(true)">تحديد الكل</button>
+                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="toggleAllPermissions(false)">مسح الكل</button>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        {% include 'accounts/includes/permission_matrix.html' %}
+                    </div>
+                </div>
+
+                <div class="text-start mt-4">
+                    <button type="submit" class="btn btn-primary px-5 shadow-sm rounded-pill"><i class="fas fa-save ms-1"></i> حفظ الموظف</button>
+                    <a href="{{ url_for('authentication_blueprint.users') }}" class="btn btn-outline-secondary px-5 shadow-sm rounded-pill me-2">إلغاء</a>
+                </div>
+            </form>
+        </div>
+    </section>
+</main>
+
+<script>
+    // Embed the JSON roles data safely
+    const rolesData = {{ roles_data|safe }};
+
+    function toggleAllPermissions(state) {
+        const checkboxes = document.querySelectorAll('.perm-checkbox');
+        checkboxes.forEach(cb => cb.checked = state);
+    }
+
+    const currentRoleId = document.getElementById('role_id').value;
+    if (currentRoleId) {
+        const changeEvent = new Event('change');
+        document.getElementById('role_id').dispatchEvent(changeEvent);
+    }
+
+    document.getElementById('role_id').addEventListener('change', function() {
+        const selectedRoleId = this.value;
+        const checkboxes = document.querySelectorAll('.perm-checkbox');
+        
+        // Reset all checkboxes first
+        toggleAllPermissions(false);
+
+        if (selectedRoleId === 'admin') {
+            // Admin gets everything checked
+            toggleAllPermissions(true);
+        } else if (rolesData[selectedRoleId]) {
+            // Fill based on role permissions
+            const permissions = rolesData[selectedRoleId];
+            for (const module in permissions) {
+                for (const perm in permissions[module]) {
+                    if (permissions[module][perm] === 'on' || permissions[module][perm] === true || permissions[module][perm] === 'True') {
+                        const checkboxId = `perm_${module}_${perm}`;
+                        const checkbox = document.getElementById(checkboxId);
+                        if (checkbox) {
+                            checkbox.checked = true;
+                        }
+                    }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

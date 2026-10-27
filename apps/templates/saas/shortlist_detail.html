@@ -1,0 +1,121 @@
+{% extends "layouts/base.html" %}
+
+{% block title %} تفاصيل القائمة {% endblock %}
+{% block header_title %} تفاصيل القائمة: {{ shortlist.name }} {% endblock %}
+
+{% block content %}
+<main>
+    {% include 'includes/preloader.html' %}
+    <section class="section-header">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2>{{ shortlist.name }}</h2>
+                    <p class="text-muted">{{ shortlist.description }}</p>
+                </div>
+                <a href="{{ url_for('saas_blueprint.shortlists') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-right"></i> العودة للقوائم
+                </a>
+            </div>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <div class="table-container mt-4">
+                <table class="table table-hover">
+                    <thead>
+                    <tr>
+                        <th scope="col">الإسم</th>
+                        <th scope="col">الجنس</th>
+                        <th scope="col">البلد</th>
+                        <th scope="col">المدينة</th>
+                        <th scope="col">رقم الهاتف</th>
+                        <th scope="col">البريد الالكتروني</th>
+                        <th scope="col">إجراءات</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for influencer in shortlist.influencers %}
+                        <tr>
+                            <td scope="row">
+                                <a href="{{ url_for('profiles_blueprint.influencer_edit', influencer_id=influencer.id) }}">
+                                {{ influencer.full_name }}
+                                </a>
+                            </td>
+                            <td scope="row">{{ influencer.gender }}</td>
+                            <td scope="row">{{ influencer.country }}</td>
+                            <td scope="row">{{ influencer.city }}</td>
+                            <td scope="row">{{ influencer.phone }}</td>
+                            <td scope="row">{{ influencer.email }}</td>
+                            <td scope="row">
+                                <form action="{{ url_for('saas_blueprint.remove_from_shortlist', shortlist_id=shortlist.id, influencer_id=influencer.id) }}" method="POST" onsubmit="return confirm('هل أنت متأكد من إزالة هذا المؤثر من القائمة؟');">
+                                    <button type="submit" class="btn btn-danger btn-sm">إزالة</button>
+                                </form>
+                            </td>
+                        </tr>
+                        <tr>
+                                <td scope="row" colspan="7">
+                                    <div class="accordion" id="accordion-{{ loop.index }}">
+                                        <div class="accordion-item">
+                                            <h2 class="accordion-header" id="heading-{{ loop.index }}" dir="ltr">
+                                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ loop.index }}" aria-expanded="true" aria-controls="collapseOne">
+                                                    الحسابات الاجتماعية
+                                                </button>
+                                            </h2>
+                                            <div id="collapse-{{ loop.index }}" class="accordion-collapse collapse" aria-labelledby="heading-{{ loop.index }}" data-bs-parent="#accordion-{{ loop.index }}">
+                                                <div class="accordion-body">
+                                                    <table class="table table-hover">
+                                                        <tr>
+                                                            <th scope="col">المنصة</th>
+                                                            <th scope="col">إسم المستخدم</th>
+                                                            <th scope="col">نوع المحتوى</th>
+                                                            <th scope="col">صورة الحساب</th>
+                                                        </tr>
+                                                    
+                                                        {% for socialaccount in influencer.socialaccounts %}
+                                                        <tr>
+                                                            <td scope="row">{{ socialaccount.platform.name }}</td>
+                                                            <td scope="row">
+                                                                <a href="{{ url_for('social_blueprint.socialaccount_edit', socialaccount_id=socialaccount.id) }}">
+                                                                    {{ socialaccount.username }}
+                                                                </a>
+                                                            </td>
+                                                            <td scope="row">{{ socialaccount.contents|map(attribute='name')|join(', ') }}</td>
+                                                            <td scope="row">
+                                                                {% if socialaccount.profile_picture %}
+                                                                    <img src="{{ url_for('static', filename='profile_pictures/' +  socialaccount.profile_picture) }}" alt="Profile Picture" class="thumbnail">
+                                                                {% endif %}
+                                                            </td>
+                                                        </tr>
+                                                        {% endfor %}
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center py-4">
+                                <p class="text-muted mb-3">لا يوجد مؤثرين في هذه القائمة.</p>
+                                <a href="{{ url_for('profiles_blueprint.discover') }}" class="btn btn-primary">استكشاف المؤثرين لإضافتهم</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+</main>
+{% include 'includes/footer.html' %}
+{% endblock content %}

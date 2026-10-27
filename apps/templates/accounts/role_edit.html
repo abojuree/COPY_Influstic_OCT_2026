@@ -1,0 +1,127 @@
+{% extends "layouts/base.html" %}
+
+{% block title %} تعديل الدور {% endblock %} 
+{% block header_title %} إدارة الأدوار والصلاحيات {%endblock %}
+{% block header_profile_image %}
+<i class="fas fa-user-edit fa-3x"></i>
+{% endblock %}
+
+{% block stylesheets %}
+<style>
+    .permissions-matrix th {
+        background-color: #f8f9fa;
+        text-align: center;
+        vertical-align: middle;
+        font-weight: 600;
+        color: #495057;
+    }
+    .permissions-matrix td {
+        text-align: center;
+        vertical-align: middle;
+    }
+    .permissions-matrix .module-name {
+        text-align: right;
+        font-weight: bold;
+        background-color: #f8f9fa;
+    }
+    .form-check-input {
+        width: 1.2em;
+        height: 1.2em;
+        cursor: pointer;
+    }
+</style>
+{% endblock stylesheets %}
+
+{% block content %}
+<main>
+    {% include 'includes/preloader.html' %}
+    
+    <section class="section-header pb-5">
+        <div class="container-fluid px-4" dir="rtl">
+            <form action="{{ url_for('authentication_blueprint.role_edit', role_id=role.id) }}" method="POST">
+                
+                <div class="row mb-4 align-items-center">
+                    <div class="col-md-6">
+                        <h2 style="font-family: 'Tajawal', sans-serif; font-weight: 700; color: #2c3e50;">
+                            <i class="fas fa-edit text-info ms-2"></i> تعديل الدور: {{ role.name }}
+                        </h2>
+                        <p class="text-muted">تحديث بيانات الدور والصلاحيات المرتبطة به</p>
+                    </div>
+                    <div class="col-md-6 text-start">
+                        <a href="{{ url_for('authentication_blueprint.roles') }}" class="btn btn-outline-secondary rounded-pill px-4 shadow-sm me-2">إلغاء</a>
+                        <button type="submit" class="btn btn-info text-white rounded-pill px-4 shadow-sm">
+                            <i class="fas fa-save ms-1"></i> تحديث الدور
+                        </button>
+                    </div>
+                </div>
+
+                <!-- معلومات الدور (Role Information) -->
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-header bg-white border-bottom py-3">
+                        <h5 class="mb-0 fw-bold"><i class="fas fa-info-circle text-info ms-2"></i> معلومات الدور</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="roleName" class="form-label fw-bold">اسم الدور <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="roleName" name="name" value="{{ role.name }}" required>
+                            </div>
+                            <div class="col-md-6 d-flex align-items-end">
+                                <div class="form-check form-switch ms-4 mb-2">
+                                    <input class="form-check-input" type="checkbox" id="roleStatus" name="status" {% if role.is_active %}checked{% endif %}>
+                                    <label class="form-check-label fw-bold ms-2" for="roleStatus">حالة الدور (نشط)</label>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <label for="roleDescription" class="form-label fw-bold">الوصف</label>
+                                <textarea class="form-control" id="roleDescription" name="description" rows="3">{{ role.description or '' }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- مصفوفة الصلاحيات (Permissions Matrix) -->
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 fw-bold"><i class="fas fa-th-list text-warning ms-2"></i> مصفوفة الصلاحيات</h5>
+                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill" id="selectAllBtn">
+                            <i class="fas fa-check-double ms-1"></i> تحديد الكل
+                        </button>
+                    </div>
+                    <div class="card-body p-0">
+                        {% set perms = role.permissions or {} %}
+                        {% include 'accounts/includes/permission_matrix.html' %}
+                    </div>
+                </div>
+
+            </form>
+        </div>
+    </section>
+</main>
+
+{% include 'includes/footer.html' %}
+{% endblock content %}
+
+{% block javascripts %}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const selectAllBtn = document.getElementById("selectAllBtn");
+        const checkboxes = document.querySelectorAll(".perm-checkbox");
+        let allSelected = false;
+
+        selectAllBtn.addEventListener("click", function() {
+            allSelected = !allSelected;
+            checkboxes.forEach(cb => {
+                cb.checked = allSelected;
+            });
+            if (allSelected) {
+                selectAllBtn.innerHTML = '<i class="fas fa-times ms-1"></i> إلغاء التحديد';
+                selectAllBtn.classList.replace('btn-outline-primary', 'btn-outline-danger');
+            } else {
+                selectAllBtn.innerHTML = '<i class="fas fa-check-double ms-1"></i> تحديد الكل';
+                selectAllBtn.classList.replace('btn-outline-danger', 'btn-outline-primary');
+            }
+        });
+    });
+</script>
+{% endblock javascripts %}

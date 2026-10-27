@@ -1,0 +1,105 @@
+{% extends "layouts/base.html" %}
+
+{% block title %} استكشاف المؤثرين {% endblock %}
+{% block header_title %} استكشاف {% endblock %}
+{% block header_sub_title %}استكشاف المؤثرين{% endblock %}
+
+{% block stylesheets %}
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+<style>
+    .avatar-sm {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4" dir="rtl">
+    
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="row mb-4">
+        <div class="col-12 d-flex justify-content-between align-items-center">
+            <div>
+                <h2 style="font-family: 'Tajawal', sans-serif; font-weight: 700; color: #2c3e50;">
+                    <i class="fas fa-search text-primary ms-2"></i> استكشاف المؤثرين
+                </h2>
+                <p class="text-muted">ابحث واكتشف المؤثرين المناسبين لحملاتك الإعلانية عبر مختلف المنصات</p>
+            </div>
+            <a href="{{ url_for('home_blueprint.favourites') }}" class="btn btn-warning shadow-sm rounded-pill px-4">
+                <i class="fas fa-star ms-1"></i> المفضلة
+            </a>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white border-0 py-3">
+            <h4 class="mb-0" style="font-family: 'Tajawal', sans-serif; font-weight: 700; color: #2c3e50;">
+                <i class="fas fa-search ms-2 text-primary"></i> قاعدة بيانات المؤثرين
+            </h4>
+        </div>
+        <div class="card-body">
+                {% set table_view = 'discover' %}
+                {% include 'includes/unified_influencer_table.html' %}
+                
+                <!-- Shortlist Modals (Outside the table) -->
+                {% for inf in influencers %}
+                <div class="modal fade" id="shortlistModal{{ inf.id }}" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content border-0 shadow">
+                            <div class="modal-header border-0 pb-0">
+                                <h5 class="modal-title fw-bold">إضافة إلى قائمة الترشيحات</h5>
+                                <button type="button" class="btn-close m-0 ms-auto" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <form action="{{ url_for('home_blueprint.shortlist_add') }}" method="POST">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}"/>
+                                <div class="modal-body">
+                                    <p class="text-muted">اختر الحملة التي تريد إضافة <strong>{{ inf.full_name }}</strong> إليها:</p>
+                                    <input type="hidden" name="influencer_id" value="{{ inf.id }}">
+                                    
+                                    <select name="campaign_id" class="form-select" required>
+                                        <option value="" disabled selected>-- اختر الحملة --</option>
+                                        {% for campaign in campaigns %}
+                                            <option value="{{ campaign.id }}">{{ campaign.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    
+                                    {% if not campaigns %}
+                                        <div class="text-danger mt-2 small">لا توجد حملات حالياً. <a href="{{ url_for('saas_blueprint.new_campaign') }}">إنشاء حملة جديدة</a></div>
+                                    {% endif %}
+                                </div>
+                                <div class="modal-footer border-0 pt-0">
+                                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">إلغاء</button>
+                                    <button type="submit" class="btn btn-primary" {% if not campaigns %}disabled{% endif %}>حفظ الإضافة</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+<script src="https://cdn.datatables.net/responsive/2.5.0/js/responsive.bootstrap5.min.js"></script>
+<script src="/static/assets/js/unified_table.js"></script>
+{% endblock %}

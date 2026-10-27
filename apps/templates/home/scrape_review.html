@@ -1,0 +1,110 @@
+{% extends "layouts/base.html" %}
+
+{% block title %} مراجعة بيانات المؤثر {% endblock %}
+{% block header_title %} إضافة مؤثر جديد {% endblock %}
+
+{% block content %}
+<main>
+    {% include 'includes/preloader.html' %}
+    <section class="section section-md pb-5">
+        <div class="container-fluid px-4" dir="rtl">
+            <div class="row justify-content-center">
+                <div class="col-12 col-lg-8">
+                    <div class="card border-0 shadow-sm mt-4">
+                        <div class="card-header bg-white border-bottom py-3 d-flex align-items-center">
+                            <h5 class="mb-0 fw-bold text-primary">
+                                <i class="fas fa-clipboard-check me-2"></i> مراجعة واستكمال بيانات المؤثر
+                            </h5>
+                        </div>
+                        <div class="card-body p-4">
+                            {% with messages = get_flashed_messages(with_categories=true) %}
+                                {% if messages %}
+                                    {% for category, message in messages %}
+                                        <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm" role="alert">
+                                            {{ message }}
+                                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                        </div>
+                                    {% endfor %}
+                                {% endif %}
+                            {% endwith %}
+
+                            <form action="{{ url_for('home_blueprint.admin_scrape_save') }}" method="POST">
+                                <!-- Hidden input storing the massive scraped JSON string -->
+                                <input type="hidden" name="scraped_data_json" value="{{ scraped_data_json }}">
+
+                                <h6 class="fw-bold mb-3 text-muted"><i class="fas fa-lock me-1"></i> البيانات المستخرجة (للقراءة فقط)</h6>
+                                <div class="row g-3 mb-4 bg-light p-3 rounded">
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold">اسم الحساب (Username)</label>
+                                        <input type="text" class="form-control" value="{{ scraped_data.get('username', '') }}" disabled>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold">الاسم الكامل (Full Name)</label>
+                                        <input type="text" class="form-control" value="{{ scraped_data.get('public_profile_name') or scraped_data.get('full_name') or scraped_data.get('username') }}" disabled>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-bold">المنصة</label>
+                                        <input type="text" class="form-control" value="{{ scraped_data.get('platform_name_english', '') }}" disabled>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-bold">المتابعين (Followers)</label>
+                                        <input type="text" class="form-control" value="{{ scraped_data.get('followers') or scraped_data.get('followers_count', 0) }}" disabled>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-bold">الإعجابات (Likes)</label>
+                                        <input type="text" class="form-control" value="{{ scraped_data.get('likes') or scraped_data.get('total_likes', 0) }}" disabled>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label fw-bold">البايو (Bio)</label>
+                                        <textarea class="form-control" rows="2" disabled>{{ scraped_data.get('bio_text', '') }}</textarea>
+                                    </div>
+                                </div>
+
+                                <h6 class="fw-bold mb-3 text-primary"><i class="fas fa-edit me-1"></i> استكمال البيانات (يمكن تعديلها لاحقاً)</h6>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold">البريد الإلكتروني</label>
+                                        <input type="email" name="email" class="form-control" value="{{ scraped_data.get('email', '') }}" placeholder="example@email.com">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold">رقم الهاتف</label>
+                                        <input type="text" name="phone" class="form-control" dir="ltr" value="{{ scraped_data.get('phone', '') }}" placeholder="+123456789">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-bold">الدولة (Country)</label>
+                                        <input type="text" name="country" class="form-control" value="{{ scraped_data.get('country', '') }}">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-bold">المدينة (City)</label>
+                                        <input type="text" name="city" class="form-control" value="{{ scraped_data.get('city', '') }}">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-bold">تصنيف المؤثر (Category)</label>
+                                        <input type="text" name="category" class="form-control" placeholder="رياضة, تقنية, إلخ...">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-bold">الجنس (Gender)</label>
+                                        <select name="gender" class="form-select">
+                                            <option value="">غير محدد</option>
+                                            <option value="Male">ذكر</option>
+                                            <option value="Female">أنثى</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <hr class="my-4">
+                                <div class="d-flex justify-content-between">
+                                    <button type="submit" class="btn btn-primary px-5 rounded-pill shadow-sm"><i class="fas fa-save ms-2"></i> حفظ في قاعدة البيانات</button>
+                                    <a href="{{ url_for('authentication_blueprint.admin_influencers') }}" class="btn btn-outline-secondary px-5 rounded-pill shadow-sm">إلغاء</a>
+                                </div>
+                            </form>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+{% include 'includes/footer.html' %}
+{% endblock %}

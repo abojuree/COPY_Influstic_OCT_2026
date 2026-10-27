@@ -1,0 +1,32 @@
+<div class="table-responsive">
+    <table class="table table-hover align-middle mb-0 w-100">
+        <thead class="table-light text-muted">
+            <tr>
+                <th class="ps-4">الوحدة</th>
+                <th class="text-center">قراءة</th>
+                <th class="text-center">كتابة</th>
+                <th class="text-center">حذف</th>
+                <th class="text-center pe-4">تنفيذ</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% set modules = [
+                ('user_management', 'إدارة المستخدمين'),
+                ('system_settings', 'إعدادات النظام'),
+                ('financials', 'المعاملات المالية'),
+                ('campaigns', 'الحملات الإعلانية'),
+                ('influencers', 'المؤثرين'),
+                ('reports', 'التقارير')
+            ] %}
+            {% for mod_key, mod_name in modules %}
+            <tr>
+                <td class="ps-4 fw-bold">{{ mod_name }}</td>
+                <td class="text-center"><input class="form-check-input perm-checkbox" type="checkbox" name="permissions[{{ mod_key }}][read]" id="perm_{{ mod_key }}_read" {% if perms and perms.get(mod_key, {}).get('read') in ['1', 'on', True] %}checked{% endif %}></td>
+                <td class="text-center"><input class="form-check-input perm-checkbox" type="checkbox" name="permissions[{{ mod_key }}][write]" id="perm_{{ mod_key }}_write" {% if perms and perms.get(mod_key, {}).get('write') in ['1', 'on', True] %}checked{% endif %}></td>
+                <td class="text-center"><input class="form-check-input perm-checkbox" type="checkbox" name="permissions[{{ mod_key }}][delete]" id="perm_{{ mod_key }}_delete" {% if perms and perms.get(mod_key, {}).get('delete') in ['1', 'on', True] %}checked{% endif %}></td>
+                <td class="text-center pe-4"><input class="form-check-input perm-checkbox" type="checkbox" name="permissions[{{ mod_key }}][execute]" id="perm_{{ mod_key }}_execute" {% if perms and perms.get(mod_key, {}).get('execute') in ['1', 'on', True] %}checked{% endif %}></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

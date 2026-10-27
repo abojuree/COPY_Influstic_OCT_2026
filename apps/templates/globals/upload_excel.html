@@ -1,0 +1,101 @@
+{% extends "layouts/base.html" %}
+
+{% block title %} إستيراد بيانات {% endblock %}
+{% block header_title %} إستيراد بيانات{% endblock %}
+{% block header_sub_title %}{% endblock %}
+{% block header_profile_image %}
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.5.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.-->
+    <path d="M16 288c-8.8 0-16 7.2-16 16v32c0 8.8 7.2 16 16 16h112v-64zm489-183L407.1 7c-4.5-4.5-10.6-7-17-7H384v128h128v-6.1c0-6.3-2.5-12.4-7-16.9zm-153 31V0H152c-13.3 0-24 10.7-24 24v264h128v-65.2c0-14.3 17.3-21.4 27.4-11.3L379 308c6.6 6.7 6.6 17.4 0 24l-95.7 96.4c-10.1 10.1-27.4 3-27.4-11.3V352H128v136c0 13.3 10.7 24 24 24h336c13.3 0 24-10.7 24-24V160H376c-13.2 0-24-10.8-24-24z" />
+</svg>
+{% endblock %}
+
+<!-- /static/assets/img/illustrations/reading-side.svg -->
+
+
+<!-- Specific Page CSS goes HERE  -->
+{% block stylesheets %}{% endblock stylesheets %}
+
+{% block content %}
+<main>
+    {% include 'includes/preloader.html' %}
+
+    <div class="container">
+        <p>الملف يجب ان يكون بصيغة csv</p>
+        <form method="POST" enctype="multipart/form-data">
+            <div class="row">
+                <div class="col">
+                <label for="option">إختر نوع البيانات</label>
+                    <div class="form-group" style="padding-right: 20px;">
+                        <input type="radio" id="option1" name="option" value="contents">
+                        <label for="option1">المحتوى</label><br>
+                        <input type="radio" id="option2" name="option" value="profiles">
+                        <label for="option2">الملفات</label><br>
+                        <input type="radio" id="option3" name="option" value="accounts">
+                        <label for="option3">الحسابات</label>
+                    </div>
+                </div>
+                <div class="col" style="min-height: 200px;">
+                    <h6>الملف يجب ان يحتوي على الأعمدة التالية:</h6>
+                    <ul id="contentList">
+                    </ul>
+                </div>
+            </div>
+        <br>
+        <hr>
+            <label for="excel_file">إختر ملف الإكسل</label>
+            <div class="form-group">
+                <input class="form-control" type="file" name="excel_file" accept=".csv" disabled>
+            </div>
+
+            <div class="btn-bar" style="padding-block: 10px;">
+                <input class="btn btn-primary" type="submit" value="إستيراد" disabled>
+            </div>
+
+            {% with messages = get_flashed_messages(with_categories=True) %}
+            {% if messages %}
+            <hr>
+            <ul class="flashes">
+                {% for category, message in messages %}
+                <li class="flash text-{{ category }}">{{ message }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+            {% endwith %}
+
+        </form>
+    </div>
+</main>
+    
+    {% include 'includes/footer.html' %}
+
+{% endblock %}
+
+<!-- Specific Page JS goes HERE  -->
+{% block javascripts %}
+    <script>
+        var excelFileInput = document.querySelector('input[name="excel_file"]');
+        var importButton = document.querySelector('input[type="submit"]');
+        var contentList = document.querySelector('#contentList');
+        contentList.innerHTML = '';  // Clear the list
+
+        document.querySelectorAll('input[name="option"]').forEach((elem) => {
+            elem.addEventListener("change", function (event) {
+                switch (event.target.value) {
+                    case 'contents':
+                        contentList.innerHTML = '<li>إسم المحتوى</li><li>الوصف</li>';
+                        break;
+                    case 'profiles':
+                        contentList.innerHTML = '<li>الأسم</li><li>الجنس</li><li>الدولة</li><li>المدينة</li><li>رقم الهاتف</li><li>البريد الإلكتروني</li><li>صورة الملف</li>';
+                        break;
+                    case 'accounts':
+                    "username", "platform_id", "influencer", "contents"
+                        contentList.innerHTML = '<li>إسم الحساب</li><li>كود المنصة (وليس إسم المنصة)</li><li>إسم المؤثر</li><li>المحتوى</li>';
+                        break;
+                }
+                excelFileInput.disabled = false;
+                importButton.disabled = false;
+
+            });
+        });
+    </script>
+{% endblock javascripts %}

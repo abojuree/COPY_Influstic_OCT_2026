@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+    <head>
+
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+        <!-- Primary Meta Tags -->
+        <title>
+            رصد - {% block title %}{% endblock %}
+        </title>
+
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
+        <meta name="description" content="نظام متكامل لرصد وتحليل حسابات التواصل الإجتماعي">
+        <meta name="title" content="رصد">
+        <meta name="author" content="M.Ziada">
+
+        <!-- Open Graph / Facebook -->
+        <meta property="og:type" content="website">
+        <meta property="og:title" content="رصد - نظام رصد وتحليل حسابات التواصل الإجتماعي">
+        <meta property="og:description" content="نظام متكامل لرصد وتحليل حسابات التواصل الإجتماعي">
+        <meta property="og:locale" content="ar_SA">
+
+        <!-- Twitter -->
+        <meta property="twitter:card" content="summary_large_image">
+        <meta property="twitter:title" content="رصد - نظام رصد وتحليل حسابات التواصل الإجتماعي">
+        <meta property="twitter:description" content="نظام متكامل لرصد وتحليل حسابات التواصل الإجتماعي">
+
+        <!-- Favicon -->
+        <link rel="apple-touch-icon" sizes="180x180" href="/static/assets/img/favicon/apple-touch-icon.png">
+        <link rel="icon" type="image/png" sizes="32x32" href="/static/assets/img/favicon/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/static/assets/img/favicon/favicon-16x16.png">
+        <link rel="manifest" href="/static/assets/img/favicon/site.webmanifest">
+        <link rel="mask-icon" href="/static/assets/img/favicon/safari-pinned-tab.svg" color="#2C3E50">
+        <meta name="msapplication-TileColor" content="#2C3E50">
+        <meta name="theme-color" content="#2C3E50">
+
+        <!-- Fontawesome -->
+        <link type="text/css" href="/static/assets/vendor/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+
+        <!-- Pixel CSS -->
+        <link type="text/css" href="/static/assets/css/pixel.css" rel="stylesheet">
+
+        <!-- Custom CSS -->
+        <link type="text/css" href="/static/assets/css/custom-style.css" rel="stylesheet">
+
+        <!-- Google Fonts -->
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Blaka+Hollow&family=Lalezar&family=Vibes&display=swap" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=Jersey+10&display=swap" rel="stylesheet">
+        <!-- Specific Page JS goes HERE  -->
+        {% block stylesheets %}{% endblock stylesheets %}
+
+        <style>
+            .site-flash-toast-container {
+                top: 5.75rem;
+                z-index: 1080;
+                width: min(92vw, 480px);
+            }
+
+            .site-flash-toast {
+                border-radius: 1rem;
+                backdrop-filter: blur(10px);
+                box-shadow: 0 12px 30px rgba(15, 23, 42, 0.18);
+            }
+
+            .site-flash-toast .toast-body {
+                padding-top: 0.9rem;
+                padding-bottom: 0.9rem;
+            }
+        </style>
+
+    </head>
+
+    <body>
+
+
+{% include 'includes/navigation.html' %}
+
+<header class="header-global">
+
+    {% if not hide_header %}
+    <section class="section-header bg-secondary text-white header-image">
+        <div class="header-title">
+            <h1> {% block header_title %}{% endblock %} </h1>
+            <h5> {% block header_sub_title %}{% endblock %}</h5>
+        </div>
+        <div class="header-profile-picture">
+            {% block header_profile_image %}{% endblock %}
+        </div>
+        <figure class="position-absolute bottom-0 left-0 w-100 d-none d-md-block mb-n2 header-figure">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 200" preserveAspectRatio="none">
+                <path fill="#ffffff" d="M0,100 Q125,50 250,100 Q375,150 500,100 Q625,50 750,100 Q875,150 1000,100 L1000,200 L0,200 Z"></path>
+            </svg>
+        </figure>
+    </section>
+    {% endif %}
+
+</header>
+
+<!-- Modal Content -->
+<div class="modal fade " id="modal-default" tabindex="-1" role="dialog" aria-labelledby="modal-default" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="h6 modal-title">تأكيد</h2>
+            </div>
+            <div class="modal-body">
+                <p id="modal-message"></p>
+            </div>
+            <div class="modal-footer">
+                <input type="hidden" id="callback-url" value="">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="confirm-delete-btn">موافق</button>
+                <button type="button" class="btn btn-link ms-auto" data-bs-dismiss="modal">إلغاء</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+{% with flash_messages = get_flashed_messages(with_categories=true) %}
+    {% if flash_messages %}
+        <div class="toast-container position-fixed start-50 translate-middle-x p-0 site-flash-toast-container">
+            {% for category, message in flash_messages %}
+                <div class="toast site-flash-toast align-items-center text-bg-{{ 'success' if category == 'success' else 'danger' if category in ['danger', 'error'] else 'primary' }} border-0 mb-2" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="3500">
+                    <div class="d-flex">
+                        <div class="toast-body fw-semibold">
+                            {{ message }}
+                        </div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endwith %}
+
+        {% block content %}{% endblock content %}
+
+        {% include 'includes/scripts.html' %}
+
+<script>
+    document.querySelectorAll('.site-flash-toast').forEach(function(toastEl) {
+        new bootstrap.Toast(toastEl).show();
+    });
+</script>
+
+        {% block javascripts %}{% endblock javascripts %}
+
+    </body>
+</html>

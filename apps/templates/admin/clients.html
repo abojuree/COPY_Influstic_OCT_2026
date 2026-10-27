@@ -1,0 +1,161 @@
+{% extends "layouts/base.html" %}
+
+{% block title %} العملاء - لوحة الإدارة {% endblock %}
+{% block header_title %} العملاء {% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+<div class="d-flex justify-content-end mb-3">
+    <form method="GET" class="d-inline-block">
+        <div class="input-group input-group-sm">
+            <span class="input-group-text bg-white fw-bold"><i class="fas fa-calendar-alt me-1"></i> المدة الزمنية</span>
+            <select name="range" class="form-select form-select-sm" onchange="this.form.submit()">
+                <option value="today" {% if current_range == 'today' %}selected{% endif %}>اليوم</option>
+                <option value="7days" {% if current_range == '7days' %}selected{% endif %}>آخر 7 أيام</option>
+                <option value="30days" {% if current_range == '30days' %}selected{% endif %}>آخر 30 يوم</option>
+                <option value="all" {% if current_range == 'all' %}selected{% endif %}>الكل</option>
+            </select>
+        </div>
+    </form>
+</div>
+<div class="row">
+    <div class="col-md-6">
+        <div class="card bg-white shadow-sm mb-4">
+            <div class="card-body">
+                <h6 class="text-muted">إجمالي الوكالات</h6>
+                <h3>{{ total_agencies }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card bg-white shadow-sm mb-4">
+            <div class="card-body">
+                <h6 class="text-muted">الاشتراكات النشطة</h6>
+                <h3>{{ active_subscriptions }}</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header border-0">
+                <h2 class="fs-5 fw-bold mb-0">توزيع الباقات</h2>
+            </div>
+            <div class="card-body">
+                <canvas id="planChart" width="400" height="400"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-8">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header border-0">
+                <h2 class="fs-5 fw-bold mb-0">قائمة الوكالات</h2>
+            </div>
+            <div class="table-responsive">
+                <table id="clientsTable" class="table align-items-center table-flush">
+                    <thead class="thead-light">
+                        <tr>
+                            <th scope="col">الوكالة</th>
+                            <th scope="col">الباقة النشطة</th>
+                            <th scope="col">عدد المستخدمين</th>
+                            <th scope="col">استخدام الحصة</th>
+                            <th scope="col">استخدام الحملات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for agency in agencies_data %}
+                        <tr>
+                            <td>{{ agency.name }}</td>
+                            <td><span class="badge bg-primary">{{ agency.plan_name }}</span></td>
+                            <td>{{ agency.user_count }}</td>
+                            <td>
+                                {{ agency.quota_used }} / {{ agency.quota_limit if agency.quota_limit else '∞' }}
+                                {% if agency.quota_limit and agency.quota_used >= agency.quota_limit %}
+                                <i class="fas fa-exclamation-triangle text-warning"></i>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {{ agency.campaign_used }} / {{ agency.campaign_limit if agency.campaign_limit else '∞' }}
+                                {% if agency.campaign_limit and agency.campaign_used >= agency.campaign_limit %}
+                                <i class="fas fa-exclamation-triangle text-warning"></i>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+$(document).ready(function() {
+    $('#clientsTable').DataTable({
+        "pageLength": 10,
+        "language": {
+            "search": "بحث:",
+            "lengthMenu": "عرض _MENU_ سجلات",
+            "info": "عرض _START_ إلى _END_ من _TOTAL_ سجلات",
+            "emptyTable": "لا توجد بيانات متاحة في الجدول",
+            "infoEmpty": "عرض 0 إلى 0 من 0 سجلات",
+            "infoFiltered": "(تصفية من _MAX_ إجمالي السجلات)",
+            "zeroRecords": "لم يتم العثور على سجلات مطابقة",
+            "paginate": {
+                "first": "الأول",
+                "last": "الأخير",
+                "next": "التالي",
+                "previous": "السابق"
+            }
+        },
+        initComplete: function () {
+            this.api().columns([1]).every(function () {
+                var column = this;
+                var select = $('<select class="form-select form-select-sm ms-2 d-inline-block w-auto"><option value="">تصفية الباقة (الكل)</option></select>')
+                    .appendTo($('.dataTables_filter', column.table().container()))
+                    .on('change', function () {
+                        var val = $.fn.dataTable.util.escapeRegex($(this).val());
+                        column.search(val ? '^'+val+'$' : '', true, false).draw();
+                    });
+
+                column.data().unique().sort().each(function (d, j) {
+                    var text = $('<div>'+d+'</div>').text().trim();
+                    if (text) {
+                        select.append('<option value="'+text+'">'+text+'</option>');
+                    }
+                });
+            });
+        }
+    });
+
+    const ctx = document.getElementById('planChart').getContext('2d');
+    const chartLabels = JSON.parse('{{ chart_labels | safe }}');
+    const chartData = JSON.parse('{{ chart_data | safe }}');
+    
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: chartLabels,
+            datasets: [{
+                data: chartData,
+                backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6']
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+});
+</script>
+{% endblock javascripts %}

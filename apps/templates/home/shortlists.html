@@ -1,0 +1,95 @@
+{% extends "layouts/base.html" %}
+
+{% block title %} إدارة القوائم {% endblock %}
+{% block header_title %} القوائم {% endblock %}
+{% block header_sub_title %}قوائم الترشيحات{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4" dir="rtl">
+    
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="row mb-4">
+        <div class="col-12 d-flex justify-content-between align-items-center">
+            <h3 style="font-family: 'Tajawal', sans-serif; font-weight: 700; color: #2c3e50;">قوائمي</h3>
+            <button class="btn btn-primary rounded-pill px-4" data-bs-toggle="modal" data-bs-target="#newShortlistModal">
+                <i class="fas fa-plus ms-1"></i> قائمة جديدة
+            </button>
+        </div>
+    </div>
+
+    <!-- New Shortlist Modal -->
+    <div class="modal fade" id="newShortlistModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold">إنشاء قائمة ترشيحات جديدة</h5>
+                    <button type="button" class="btn-close m-0 ms-auto" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form action="{{ url_for('home_blueprint.shortlists') }}" method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}"/>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">اسم القائمة</label>
+                            <input type="text" name="name" class="form-control" required placeholder="مثال: حملة الصيف ٢٠٢٧">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-muted">وصف (اختياري)</label>
+                            <textarea name="description" class="form-control" rows="3" placeholder="ملاحظات حول هذه القائمة..."></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-0 pt-0">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">إلغاء</button>
+                        <button type="submit" class="btn btn-primary">إنشاء القائمة</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        {% for list in shortlists %}
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 border-0 shadow-sm" style="border-radius: 15px; transition: transform 0.2s;">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="icon-box bg-light text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                            <i class="fas fa-folder-open fa-lg"></i>
+                        </div>
+                        <span class="badge bg-primary rounded-pill px-3 py-2">{{ list.influencers|length }} مؤثر</span>
+                    </div>
+                    <h5 class="card-title fw-bold text-dark mb-2">{{ list.name }}</h5>
+                    <p class="card-text text-muted small mb-4" style="height: 40px; overflow: hidden;">
+                        {{ list.description or 'لا يوجد وصف' }}
+                    </p>
+                    <a href="{{ url_for('home_blueprint.shortlist_detail', id=list.id) }}" class="btn btn-outline-primary w-100 stretched-link rounded-pill">
+                        استعراض القائمة
+                    </a>
+                </div>
+                <div class="card-footer bg-white border-0 text-muted small py-3" style="border-top: 1px solid #f8f9fa!important;">
+                    أنشئت في: {{ list.created_at.strftime('%Y-%m-%d') }}
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12 text-center py-5">
+            <div class="alert alert-light border rounded-3 shadow-sm d-inline-block px-5 py-4">
+                <i class="fas fa-folder-plus fa-2x mb-3 text-muted"></i>
+                <h5 class="mb-3 text-muted">لا توجد قوائم حالياً</h5>
+                <p class="text-muted mb-0 small">اضغط على "قائمة جديدة" لإنشاء أول قائمة ترشيحات لك.</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

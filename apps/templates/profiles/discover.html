@@ -1,0 +1,207 @@
+{% extends "layouts/base.html" %}
+
+{% block title %} استكشاف المؤثرين {% endblock %} 
+{% block header_title %} استكشاف المؤثرين {% endblock %}
+{% block header_profile_image %}
+<i class="fas fa-search-location fa-3x"></i>
+{% endblock %}
+
+{% block stylesheets %}
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css">
+<style>
+    .dataTables_wrapper .dataTables_filter { text-align: left; }
+    .dataTables_wrapper .dataTables_length { text-align: right; }
+    .avatar-sm { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
+    .platform-icon { font-size: 1.2rem; margin-left: 5px; }
+    table.dataTable.dtr-inline.collapsed>tbody>tr>td.dtr-control:before, table.dataTable.dtr-inline.collapsed>tbody>tr>th.dtr-control:before {
+        background-color: #0d6efd;
+    }
+</style>
+{% endblock stylesheets %}
+
+{% block content %}
+
+    <main>
+        {% include 'includes/preloader.html' %}
+        
+        <section class="section section-md pb-5">
+            <div class="container-fluid px-4" dir="rtl">
+                
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center py-4">
+                    <div class="d-block mb-4 mb-md-0">
+                        <h2 class="h4" style="font-family: 'Tajawal', sans-serif; font-weight: 700; color: #2c3e50;">
+                            <i class="fas fa-globe me-2 text-primary"></i> قاعدة بيانات المؤثرين
+                        </h2>
+                        <p class="mb-0 text-muted">ابحث واكتشف المؤثرين الأنسب لحملتك الإعلانية</p>
+                    </div>
+                </div>
+
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        <div class="mb-4">
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endwith %}
+
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body p-4">
+                        <div class="table-responsive">
+                            <table id="discoverTable" class="table table-hover align-middle w-100 dt-responsive nowrap">
+                                <thead class="table-light text-muted">
+                                    <tr>
+                                        <th class="ps-4">المؤثر</th>
+                                        <th>الموقع (البلد / المدينة)</th>
+                                        <th>المنصات</th>
+                                        <th>الوصول (المتابعين)</th>
+                                        <th>الفئة / المحتوى</th>
+                                        <th class="text-center">إضافة لقائمة</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                {% for influencer in influencers.items %}
+                                    {% set total_reach = namespace(value=0) %}
+                                    {% set platforms = [] %}
+                                    {% set categories = [] %}
+                                    {% set pic = influencer.profile_picture %}
+                                    
+                                    {% for acc in influencer.socialaccounts %}
+                                        {% if not pic %}{% set pic = acc.profile_picture %}{% endif %}
+                                        {% if acc.platform.name_english not in platforms %}
+                                            {% set _ = platforms.append(acc.platform.name_english) %}
+                                        {% endif %}
+                                        {% for content in acc.contents %}
+                                            {% if content.name not in categories %}
+                                                {% set _ = categories.append(content.name) %}
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% endfor %}
+                                    
+                                    {% if scanresults_dict and influencer.id in scanresults_dict %}
+                                        {% set total_reach.value = scanresults_dict[influencer.id] %}
+                                    {% else %}
+                                        {% for acc in influencer.socialaccounts %}
+                                            {% set total_reach.value = total_reach.value + (acc.followers|default(0)|int) %}
+                                        {% endfor %}
+                                    {% endif %}
+                                    
+                                    <tr>
+                                        <td class="ps-4">
+                                            <div class="d-flex align-items-center">
+                                                <img src="{{ pic or 'https://via.placeholder.com/150' }}" class="avatar-sm ms-3 shadow-sm" alt="Avatar">
+                                                <div>
+                                                    <h6 class="mb-0 fw-bold text-dark">
+                                                        <a href="{{ url_for('profiles_blueprint.influencer_edit', influencer_id=influencer.id) }}" class="text-decoration-none text-dark">{{ influencer.full_name }}</a>
+                                                    </h6>
+                                                    <small class="text-muted">{{ influencer.gender or '' }}</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="text-dark fw-bold">{{ influencer.country or '-' }}</span>
+                                            {% if influencer.city %}<br><small class="text-muted">{{ influencer.city }}</small>{% endif %}
+                                        </td>
+                                        <td>
+                                            {% for plat in platforms %}
+                                                <i class="fab fa-{{ plat|lower }} platform-icon text-{{ plat|lower }}" title="{{ plat }}"></i>
+                                            {% else %}
+                                                <span class="text-muted small">لا يوجد</span>
+                                            {% endfor %}
+                                        </td>
+                                        <td dir="ltr" class="text-end">
+                                            <span class="badge bg-success-soft text-success px-3 py-2 rounded-pill fs-6 fw-bold">
+                                                {% if total_reach.value >= 1000000 %}
+                                                    {{ (total_reach.value / 1000000)|round(1) }}M
+                                                {% elif total_reach.value >= 1000 %}
+                                                    {{ (total_reach.value / 1000)|round(1) }}K
+                                                {% else %}
+                                                    {{ total_reach.value }}
+                                                {% endif %}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% for cat in categories[:2] %}
+                                                <span class="badge bg-secondary-soft text-secondary me-1">{{ cat }}</span>
+                                            {% else %}
+                                                <span class="text-muted small">-</span>
+                                            {% endfor %}
+                                            {% if categories|length > 2 %}
+                                                <span class="badge bg-light text-dark">+{{ categories|length - 2 }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-center">
+                                            <form action="{{ url_for('saas_blueprint.add_to_shortlist', influencer_id=influencer.id) }}" method="POST" class="d-inline-block">
+                                                <div class="input-group input-group-sm">
+                                                    <select name="shortlist_id" class="form-select border-primary" required>
+                                                        <option value="" disabled selected>اختر قائمة...</option>
+                                                        {% for shortlist in shortlists %}
+                                                        <option value="{{ shortlist.id }}">{{ shortlist.name }}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                    <button type="submit" class="btn btn-primary px-3"><i class="fas fa-plus"></i></button>
+                                                </div>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Fallback pagination if DataTables server-side is not implemented -->
+                <nav aria-label="Blog page navigation" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% for page in influencers.iter_pages() %}
+                            {% if page %}
+                                {% if influencers.page == page %}
+                                    <li class="page-item active"><a class="page-link shadow-sm" href="#">{{ page }}</a></li>
+                                {% else %}
+                                    <li class="page-item"><a class="page-link shadow-sm" href="{{ url_for('profiles_blueprint.discover', page=page, q=search_terms) }}">{{ page }}</a></li>
+                                {% endif %}
+                            {% else %}
+                                <li class="page-item disabled"><a class="page-link" href="#">...</a></li>
+                            {% endif %}
+                        {% endfor %}
+                    </ul>
+                </nav>
+
+            </div>
+        </section>
+
+    </main>
+
+    {% include 'includes/footer.html' %}
+
+{% endblock content %}
+
+{% block javascripts %}
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+<script src="https://cdn.datatables.net/responsive/2.5.0/js/responsive.bootstrap5.min.js"></script>
+<script>
+    $(document).ready(function() {
+        $('#discoverTable').DataTable({
+            "language": {
+                "url": "//cdn.datatables.net/plug-ins/1.13.6/i18n/ar.json"
+            },
+            "responsive": true,
+            "paging": false,  // Disable DT paging since we use server-side pagination from Flask
+            "info": false,    // Hide "Showing 1 to X" since paging is off
+            "order": [],
+            "columnDefs": [
+                { "orderable": false, "targets": 5 } // Disable sorting on the Actions/List column
+            ]
+        });
+    });
+</script>
+{% endblock javascripts %}

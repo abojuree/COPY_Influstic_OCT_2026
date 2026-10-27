@@ -1,0 +1,131 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %} Influencers Registry {% endblock title %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Live Scraper Form -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0 text-white"><i class="fas fa-search me-2"></i> الجلب المباشر</h5>
+                </div>
+                <div class="card-body">
+                    <form id="influencerScrapeForm" action="{{ url_for('home_blueprint.scrape_start') }}" method="POST" class="row g-3 align-items-center">
+                        {{ form.hidden_tag() }}
+                        <div class="col-auto">
+                            <label for="platform" class="col-form-label fw-bold">المنصة:</label>
+                        </div>
+                        <div class="col-auto">
+                            {{ form.platform(class="form-select", id="platform", required=True) }}
+                        </div>
+                        <div class="col-auto">
+                            <label for="username" class="col-form-label fw-bold">اسم المستخدم:</label>
+                        </div>
+                        <div class="col-auto">
+                            {{ form.username(class="form-control", id="username", placeholder="@username", required=True) }}
+                        </div>
+                        <div class="col-auto">
+                            <button type="submit" class="btn btn-secondary"><i class="fas fa-download me-1"></i> جلب وإضافة</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card shadow-sm text-center border-0">
+                <div class="card-body">
+                    <h6 class="card-title text-muted text-uppercase fw-bold">إجمالي المؤثرين</h6>
+                    <h2 class="fw-bold mb-0 text-primary">{{ total_influencers }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm text-center border-0">
+                <div class="card-body">
+                    <h6 class="card-title text-muted text-uppercase fw-bold">إجمالي الحسابات</h6>
+                    <h2 class="fw-bold mb-0 text-primary">{{ total_accounts }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm text-center border-0">
+                <div class="card-body">
+                    <h6 class="card-title text-muted text-uppercase fw-bold">الأكثر متابعة</h6>
+                    <h2 class="fw-bold mb-0 text-primary text-truncate">{{ most_tracked_influencer }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart and Table -->
+    <div class="row">
+        <!-- Chart: col-md-4 -->
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-sm h-100 border-0">
+                <div class="card-header bg-white border-bottom">
+                    <h6 class="mb-0 fw-bold"><i class="fas fa-chart-pie me-1"></i> توزيع المنصات</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="platformChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Table: col-md-8 -->
+        <div class="col-md-8 mb-4">
+            <div class="card shadow-sm h-100 border-0">
+                <div class="card-header bg-white border-bottom">
+                    <h6 class="mb-0 fw-bold"><i class="fas fa-list me-1"></i> جدول المؤثرين الشامل</h6>
+                </div>
+                <div class="card-body">
+                    {% set table_view = 'admin' %}
+                    {% include 'includes/unified_influencer_table.html' %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block javascripts %}
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+<script src="https://cdn.datatables.net/responsive/2.5.0/js/responsive.bootstrap5.min.js"></script>
+<script src="/static/assets/js/unified_table.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+$(document).ready(function() {
+    // Initialize Chart.js Bar Chart
+    const ctx = document.getElementById('platformChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: {{ chart_labels | safe }},
+            datasets: [{
+                label: 'Accounts',
+                data: {{ chart_data | safe }},
+                backgroundColor: ['#E1306C', '#000000', '#FF0000', '#FFFC00', '#3b5998'],
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: { beginAtZero: true, ticks: { precision: 0 } }
+            }
+        }
+    });
+});
+</script>
+{% endblock javascripts %}

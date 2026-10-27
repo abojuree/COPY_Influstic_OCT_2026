@@ -1,0 +1,103 @@
+{% extends "layouts/base.html" %}
+
+{% block title %} سجل الأحداث {% endblock %} 
+{% block header_title %} إستعراض السجل {% endblock %}
+{% block header_profile_image %}
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--!Font Awesome Free 6.5.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.-->
+    <path d="M336 64h-80c0-35.3-28.7-64-64-64s-64 28.7-64 64H48C21.5 64 0 85.5 0 112v352c0 26.5 21.5 48 48 48h288c26.5 0 48-21.5 48-48V112c0-26.5-21.5-48-48-48zM96 424c-13.3 0-24-10.7-24-24s10.7-24 24-24 24 10.7 24 24-10.7 24-24 24zm0-96c-13.3 0-24-10.7-24-24s10.7-24 24-24 24 10.7 24 24-10.7 24-24 24zm0-96c-13.3 0-24-10.7-24-24s10.7-24 24-24 24 10.7 24 24-10.7 24-24 24zm96-192c13.3 0 24 10.7 24 24s-10.7 24-24 24-24-10.7-24-24 10.7-24 24-24zm128 368c0 4.4-3.6 8-8 8H168c-4.4 0-8-3.6-8-8v-16c0-4.4 3.6-8 8-8h144c4.4 0 8 3.6 8 8v16zm0-96c0 4.4-3.6 8-8 8H168c-4.4 0-8-3.6-8-8v-16c0-4.4 3.6-8 8-8h144c4.4 0 8 3.6 8 8v16zm0-96c0 4.4-3.6 8-8 8H168c-4.4 0-8-3.6-8-8v-16c0-4.4 3.6-8 8-8h144c4.4 0 8 3.6 8 8v16z" />
+</svg>
+{% endblock %}
+
+<!-- Specific Page CSS goes HERE  -->
+{% block stylesheets %}{% endblock stylesheets %}
+
+{% block content %}
+
+    <main>
+        
+        {% include 'includes/preloader.html' %}
+        <!-- Hero -->
+        <section class="section-header">
+            <div class="container">
+                <div class="search-bar">
+                    <a href="{{ url_for('globals_blueprint.export_to_excel', model_name='Log') }}" style="font-family: 'Jersey 10'; font-size: x-large;"><span class="fas fa-file-excel" style="font-size: x-large; padding-inline: 5px; color: green;"></span>Export to Excel</a>
+                
+                
+                        <form method="GET" action="{{ url_for('home_blueprint.log') }}" class="date-picker">
+                            <a href="{{ url_for('home_blueprint.log') }}" class="btn btn-primary">إلغاء التصفية</a>
+                            <button type="submit" class="btn btn-primary">تصفية</button>
+                            <div class="form-group">
+                                <div class="input-group input-group-border">
+                                    <span class="input-group-text" id="basic-addonDate3"><span class="fas far fa-calendar-alt"></span></span>
+                                    <input class="form-control" data-datepicker="" id="to_date" name="to_date" placeholder="إلى تاريخ" type="text">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div class="input-group input-group-border">
+                                    <span class="input-group-text" id="basic-addonDate2"><span class="fas far fa-calendar-alt"></span></span>
+                                    <input class="form-control" data-datepicker="" id="from_date" name="from_date" placeholder="من تاريخ" type="text">
+                                </div>
+                            </div>
+                        </form>
+
+                </div>
+
+                <div class="table-container">
+                    <table class="table table-hover">
+                        <thead>
+                        <tr>
+                            <th scope="col">إسم المستخدم</th>
+                            <th scope="col">الحدث</th>
+                            <th scope="col">التاريخ</th>
+                            <th scope="col">الوقت</th>
+                            <th scope="col">البريد الإلكتروني</th>
+                            <th scope="col">عنوان الإنترنت</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for log in logs %}
+                            <tr>
+                                <td scope="row">{{ log.user.username }}</td>
+                                <td scope="row">{{ log.log_text }}</td>
+                                <td scope="row">{{ log.creation_date }}</td>
+                                <td scope="row">{{ log.creation_time.strftime('%H:%M') if log.creation_time else '00:00' }}</td>
+                                <td scope="row">{{ log.user.email }}</td>
+                                <td scope="row">{{ log.user_ip }}</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <br>
+                <nav aria-label="Blog page navigation">
+                    <ul class="pagination">
+                        {% for page in logs.iter_pages() %}
+                        {% if page %}
+                        {% if logs.page == page %}
+                        <li class="page-item active">
+                            <a class="page-link" href="#">{{ page }}</a>
+                        </li>
+                        {% else %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('home_blueprint.log', page=page, from_date=from_date, to_date=to_date) }}">{{ page }}</a>
+                        </li>
+                        {% endif %}
+                        {% else %}
+                        <li class="page-item disabled">
+                            <a class="page-link" href="#">...</a>
+                        </li>
+                        {% endif %}
+                        {% endfor %}
+                    </ul>
+                </nav>
+            </div>
+        </section>
+
+    </main>
+
+    {% include 'includes/footer.html' %}
+
+{% endblock content %}
+
+<!-- Specific Page JS goes HERE  -->
+{% block javascripts %}{% endblock javascripts %}

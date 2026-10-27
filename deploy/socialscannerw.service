@@ -1,0 +1,32 @@
+[Unit]
+Description=Influencers Analytics Platform (Gunicorn)
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+# --- EDIT THESE PATHS TO MATCH YOUR SERVER ---
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/socialscannerw
+Environment="FLASK_ENV=production"
+Environment="DEBUG_MODE=False"
+Environment="PYTHONUNBUFFERED=true"
+Environment="SCHEDULER_API_ENABLED=False"
+
+# Use the .env.prod file for database credentials
+EnvironmentFile=/opt/socialscannerw/.env.prod
+
+# Start gunicorn with 4 workers (adjust based on CPU cores)
+ExecStart=/opt/socialscannerw/venv/bin/gunicorn \
+    --workers 4 \
+    --bind 0.0.0.0:4000 \
+    --timeout 120 \
+    --access-logfile /var/log/socialscannerw/access.log \
+    --error-logfile /var/log/socialscannerw/error.log \
+    wsgi:app
+
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
